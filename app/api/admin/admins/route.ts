@@ -1,0 +1,158 @@
+// app/api/admin/admins/route.ts
+// This route is for creating and listing administrators.
+import { NextResponse } from 'next/server';
+import { auth } from '@/app/auth';
+import prisma from '@/lib/prisma';
+import { z } from 'zod';
+import bcrypt from 'bcryptjs';
+
+// Schema for creating a new admin
+const createAdminSchema = z.object({
+  fullName: z.string().min(1, { message: "Full name is required." }),
+  email: z.string().email({ message: "A valid email is required." }).min(1, { message: "Email is required." }),
+  password: z.string().min(8, { message: "Password must be at least 8 characters." }),
+  role: z.enum(["MAIN_ADMIN", "REGISTRAR_ADMIN"], { required_error: "Admin role is required." }),
+});
+
+/**
+ * GET /api/admin/admins
+ * Fetches a paginated list of all administrators.
+ * Only a MAIN_ADMIN can view other administrators.
+ */
+export async function GET(request: Request) {
+  try {
+    const session = await auth();
+
+    if (!session || !session.user || session.user.role !== 'MAIN_ADMIN') {
+      return new NextResponse(JSON.stringify({ message: 'Unauthorized' }), { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const searchQuery = searchParams.get('search') || '';
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const limit = parseInt(searchParams.get('limit') || '10', 10);
+    const skip = (page - 1) * limit;
+
+    let whereClause: any = {};
+
+    if (searchQuery) {
+      whereClause.OR = [
+        { fullName: { contains: searchQuery, mode: 'insensitive' } },
+        { email: { contains: searchQuery, mode: 'insensitive' } },
+      ];
+    }
+
+    const [admins, totalAdmins] = await prisma.$transaction([
+      prisma.admin.findMany({
+        where: whereClause,
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          role: true,
+          createdAt: true,
+          updatedAt: true,
+          registeredBy: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip,
+        take: limit,
+      }),
+      prisma.admin.count({ where: whereClause }),
+    ]);
+
+    return NextResponse.json(
+      {
+        data: admins,
+        pagination: {
+          total: totalAdmins,
+          page,
+          limit,
+          totalPages: Math.ceil(totalAdmins / limit),
+        },
+      },
+      { status: 200 }
+    );
+
+  } catch (error: any) {
+    console.error('Error fetching administrators:', error);
+    return new NextResponse(JSON.stringify({ message: 'Internal Server Error', error: error.message }), { status: 500 });
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+/**
+ * POST /api/admin/admins
+ * Creates a new administrator.
+ * Only a MAIN_ADMIN can create new administrators.
+ */
+export async function POST(request: Request) {
+  try {
+    const session = await auth();
+
+    if (!session || !session.user || session.user.role !== 'MAIN_ADMIN') {
+      return new NextResponse(JSON.stringify({ message: 'Unauthorized' }), { status: 401 });
+    }
+
+    const body = await request.json();
+    const validatedData = createAdminSchema.safeParse(body);
+
+    if (!validatedData.success) {
+      console.error('Validation error:', validatedData.error.flatten().fieldErrors);
+      return new NextResponse(
+        JSON.stringify({ message: "Validation error", errors: validatedData.error.flatten().fieldErrors }),
+        { status: 400 }
+      );
+    }
+
+    const { fullName, email, password, role } = validatedData.data;
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const newAdmin = await prisma.admin.create({
+      data: {
+        fullName,
+        email,
+        passwordHash,
+        role,
+        registeredById: session.user.id,
+      },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        role: true,
+        createdAt: true,
+      },
+    });
+
+    await prisma.activityLog.create({
+      data: {
+        action: 'ADMIN_CREATED_ADMIN',
+        description: `Administrator "${newAdmin.fullName}" (${newAdmin.email}) with role "${newAdmin.role}" was created by ${session.user.name || session.user.email}.`,
+        entityId: newAdmin.id,
+        entityType: 'Admin',
+        performedById: session.user.id,
+      },
+    });
+
+    return new NextResponse(JSON.stringify(newAdmin), { status: 201 });
+
+  } catch (error: any) {
+    console.error('Error creating administrator:', error);
+    if (error.code === 'P2002') {
+      return new NextResponse(JSON.stringify({ message: 'An admin with this email already exists.' }), { status: 409 });
+    }
+    return new NextResponse(JSON.stringify({ message: 'Internal Server Error', error: error.message }), { status: 500 });
+  } finally {
+    await prisma.$disconnect();
+  }
+}

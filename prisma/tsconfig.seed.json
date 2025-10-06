@@ -1,0 +1,17 @@
+// prisma/tsconfig.seed.json
+{
+  "extends": "../tsconfig.json", // Inherit common settings from your main tsconfig
+  "compilerOptions": {
+    "module": "CommonJS", // Crucial: Compile seed as CommonJS
+    "outDir": "../dist-seed", // Optional: A separate output directory for seed compilation
+    "esModuleInterop": true,
+    "target": "es2021", // Or a recent ES version like es2020
+    "rootDir": "../" // Set rootDir appropriately
+  },
+  "include": [
+    "seed.ts" // Only include the seed file
+  ],
+  "exclude": [
+    "../node_modules" // Exclude node_modules from seed compilation
+  ]
+}

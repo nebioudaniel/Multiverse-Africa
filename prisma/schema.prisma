@@ -1,0 +1,254 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql" // Or "sqlite", "mysql", etc. based on your setup
+  url      = env("DATABASE_URL")
+}
+
+// ======================================================
+// ENUM FOR USER ROLES (NEWLY ADDED)
+// = Ensures type safety and valid roles for all users
+// ======================================================
+enum UserRole {
+  APPLICANT
+  // Add other user roles if needed (e.g., if you have other types of users later)
+  // For now, only APPLICANT is explicitly needed for the application process.
+}
+
+// ======================================================
+// User Model (for Applicants/Regular Users)
+// This model holds data for individuals who apply for loans.
+// Data filled during initial registration (Step 1 & 2) should reside here.
+// ======================================================
+model User {
+  id                      String        @id @default(uuid())
+  userId                  String?       // Optional userId for future integrations (consider if this is truly needed or if 'id' is sufficient)
+  fullName                String
+  fatherName              String?
+  grandfatherName         String?
+  isBusiness              Boolean       @default(false) // Keeping as Boolean. If can be null, change to Boolean?
+  entityName              String?
+  tin                     String?
+  businessLicenseNo       String?
+  emailAddress            String?       @unique
+  passwordHash            String?
+  primaryPhoneNumber      String?       @unique
+  alternativePhoneNumber  String?
+  gender                  String?
+  idNumber                String?       @unique
+  residentialAddress      String?
+  region                  String?
+  city                    String?
+  woredaKebele            String?
+  houseNumber             String?
+  associationName         String?
+  membershipNumber        String?
+  role                    UserRole      @default(APPLICANT) 
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+
+  preferredVehicleType    String?
+  vehicleQuantity         Int?
+  intendedUse             String?
+
+  applications            Application[]
+
+  // NEW: Fields to track which admin registered this user
+  registeredById          String? // ID of the admin who registered this user
+  registeredBy            Admin?    @relation("RegisteredUsers", fields: [registeredById], references: [id])
+
+  // --- NEW FIELDS ADDED BELOW ---
+
+  // Digital Signature & Terms
+  digitalSignatureUrl     String?       // URL or base64 of the digital signature. Made optional as it's part of a step.
+  agreedToTerms           Boolean       @default(false) // Required: User must agree to terms
+
+  // Driver Information (Required as per your request)
+  driverFullName          String?       // Made optional for existing users, but if strictly required for ALL applicants, remove '?'
+  driverLicenseNo         String?       // Made optional for existing users, but if strictly required for ALL applicants, remove '?'
+  licenseCategory         String?       // Made optional for existing users, but if strictly required for ALL applicants, remove '?'
+                                        // Consider using an Enum for licenseCategory if categories are fixed (e.g., enum LicenseCategory { A B C D })
+
+  // Technology Preferences (Optional as per your request)
+  enableGpsTracking       Boolean?      // Optional: Yes/No for GPS/Fleet Tracking
+  acceptEpayment          Boolean?      // Optional: Yes/No for accepting e-payment
+
+  // --- END NEW FIELDS ---
+
+  @@index([registeredById])
+}
+
+
+
+// ======================================================
+// Admin Model (for Main Admins, Registrar Admins, etc.)
+// This model holds data for your internal administrative staff.
+// Separated from the User model for clear distinctions and permissions.
+// ======================================================
+model Admin {
+  id           String      @id @default(uuid())
+  fullName     String
+  email        String      @unique
+  passwordHash String
+  role         AdminRole   @default(REGISTRAR_ADMIN)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  processedApplications Application[] @relation("ProcessedBy")
+  assignedApplications  Application[] @relation("AssignedTo")
+  registeredUsers       User[]        @relation("RegisteredUsers")
+  
+  // ======================================================
+  // FIX: ADD THESE TWO LINES FOR SELF-REFERENCING ADMINS
+  // This allows tracking which admin created another admin
+  // ======================================================
+  registeredById        String? // The ID of the Admin who created this Admin
+  registeredBy          Admin?    @relation("AdminRegistrations", fields: [registeredById], references: [id], onDelete: SetNull)
+  registeredAdmins      Admin[]   @relation("AdminRegistrations") // Admins registered by this admin
+ performedActivities   ActivityLog[]
+ lastViewedActivityTimestamp DateTime? // This is the missing back-relation
+}
+
+// Enum for Admin Roles
+enum AdminRole {
+  MAIN_ADMIN
+  REGISTRAR_ADMIN
+  // Add other admin roles as needed (e.g., LOAN_OFFICER, SUPERVISOR)
+}
+
+// ======================================================
+// Application Model
+// This model holds the details of each vehicle loan application.
+// It links to the 'User' (applicant) and 'Admin' models.
+// ======================================================
+enum LicenseCategory {
+  A
+  B
+  C
+  D
+}
+
+// And here is the updated Application model with the driver information
+model Application {
+  id                            String     @id @default(uuid())
+  createdAt                     DateTime   @default(now())
+  updatedAt                     DateTime   @updatedAt
+
+  // Relationship to the Applicant (User model)
+  applicantId                   String
+  applicant                     User       @relation(fields: [applicantId], references: [id])
+
+  // Snapshot of applicant details at time of application creation/last update
+  applicantFullName             String?
+  gender                        String?
+  idNumber                      String?
+  primaryPhoneNumber            String?
+  applicantEmailAddress         String?
+  residentialAddress            String?
+  region                        String?
+  city                          String?
+  woredaKebele                  String?
+  houseNumber                   String?
+
+  isBusiness                    Boolean?
+
+  entityName                    String?
+  tin                           String?
+  businessLicenseNo             String?
+
+  associationName               String?
+  membershipNumber              String?
+
+  // --- Driver Information for THIS Application (NEWLY ADDED) ---
+  driverFullName                String       // Required for this application
+  driverLicenseNo               String       // Required for this application
+  licenseCategory               LicenseCategory // Use the new enum
+  // --- END Driver Information ---
+
+
+  // Vehicle Details
+  vehicleType                   VehicleType
+  quantityRequested             Int
+  intendedUse                   String?
+
+  // Financing Information
+  preferredFinancingInstitution String?
+  loanAmountRequested           Float
+  loanApplicationStatus         LoanApplicationStatus @default(Pending)
+  downPaymentProofUrl           String?
+  bankReferenceNumber           String?
+
+  // Document Attachments URLs
+  idScanUrl                     String?
+  tinNumberUrl                  String?
+  supportingLettersUrl          String?
+
+  // Admin-specific Fields
+  applicationStatus             ApplicationStatus @default(NEW)
+  remarks                       String?
+
+  // Relationships to Admin model
+  processedById                 String?
+  processedBy                   Admin?    @relation("ProcessedBy", fields: [processedById], references: [id])
+
+  assignedToId                  String?
+  assignedTo                    Admin?    @relation("AssignedTo", fields: [assignedToId], references: [id])
+
+  // Indexes for better query performance
+  @@index([applicantId])
+  @@index([applicationStatus])
+  @@index([loanApplicationStatus])
+  @@index([processedById])
+  @@index([assignedToId])
+}
+
+// Enums for Application Statuses
+enum ApplicationStatus {
+  NEW
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+}
+
+// Enums for Loan Application Statuses
+enum LoanApplicationStatus {
+  Pending
+  Approved
+  Disbursed
+}
+
+// Enums for Vehicle Types
+enum VehicleType {
+  Diesel_Minibus @map("Diesel Minibus")
+  Electric_Minibus @map("Electric Minibus")
+  Electric_Mid_Bus_21_1 @map("Electric Mid Bus (21+1)")
+  Traditional_Minibus @map("Traditional Minibus")
+}
+model ActivityLog {
+  id           String    @id @default(uuid())
+  createdAt    DateTime  @default(now())
+  action       String    // e.g., "USER_REGISTERED", "APPLICATION_CREATED", "ADMIN_UPDATED_USER", "ADMIN_CREATED_ADMIN"
+  description  String?   // A more detailed description of the action
+
+  // Who performed the action (if applicable, e.g., an admin)
+  performedById String?
+  performedBy   Admin?    @relation(fields: [performedById], references: [id]) // Use Admin model here
+
+  // Who/What was the subject of the action (if different from performedBy)
+  // For user registrations, this could be the ID of the new user.
+  // For application creations, this could be the ID of the application or applicant.
+  entityId     String?   // ID of the entity affected (User ID, Application ID, etc.)
+  entityType   String?   // e.g., "User", "Application", "Admin"
+
+  // Optional: You might add more fields like ipAddress, or a JSON field for structured details
+  // ipAddress String?
+  // details   Json?
+
+  @@index([performedById])
+  @@index([entityId])
+  @@index([createdAt])
+}
