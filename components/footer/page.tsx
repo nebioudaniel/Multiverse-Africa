@@ -23,9 +23,8 @@ const Footer: React.FC = () => {
             />
           </div>
           <p className="text-sm text-gray-600 leading-relaxed max-w-sm mx-auto lg:mx-0">
-            Multiverse Trading was founded in 2000 and ever since we have been working 
-            in the market to provide different kinds of goods and services that different 
-            people and organizations demand.
+          Established in 2000, Multiverse has evolved into a leading Ethiopian enterprise group shaping the nation’s growth. From industry and real estate to trade finance, electronics, and global commerce, we integrate local strength with international reach. For more than two decades, our subsidiaries have partnered with governments, businesses, and institutions to create jobs, deliver impactful projects, and drive sustainable progress across Ethiopia and beyond.
+
           </p>
         </div>
 
@@ -56,7 +55,7 @@ const Footer: React.FC = () => {
             </li>
             <li className="flex items-center justify-center lg:justify-start gap-2">
               <Phone className="h-4 w-4 text-indigo-600" />
-              <span>+2519911221567</span>
+              <span>+251911221567</span>
             </li>
             <li className="flex items-center justify-center lg:justify-start gap-2">
               <Mail className="h-4 w-4 text-indigo-600" />
