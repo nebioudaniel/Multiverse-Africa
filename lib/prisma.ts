@@ -1,8 +1,16 @@
-// lib/prisma.ts
-import { PrismaClient } from '@prisma/client';
+// ✅ RECOMMENDED: Use Neon Driver Adapter for Edge compatibility
 
-// 1. Declare a global variable for PrismaClient
-// This is necessary to avoid hot-reloading issues in Next.js development
+import { PrismaClient } from '@prisma/client';
+import { Pool } from '@neondatabase/serverless';
+import { PrismaNeon } from '@prisma/adapter-neon';
+
+// 1. Check for DATABASE_URL
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error('DATABASE_URL environment variable is not set.');
+}
+
+// 2. Declare a global variable for PrismaClient
 declare global {
   // eslint-disable-next-line no-var
   var prisma: PrismaClient | undefined;
@@ -10,14 +18,17 @@ declare global {
 
 let prisma: PrismaClient;
 
-// 2. Check if the global instance already exists (in development)
+// 3. Instantiate Neon's Pool and the Prisma Adapter
+const neon = new Pool({ connectionString });
+const adapter = new PrismaNeon(neon);
+
+// 4. Create an Edge-compatible Prisma Client instance
 if (process.env.NODE_ENV === 'production') {
-  // In production, always create a new instance
-  prisma = new PrismaClient();
+  prisma = new PrismaClient({ adapter });
 } else {
   // In development, reuse the global instance if it exists
   if (!global.prisma) {
-    global.prisma = new PrismaClient();
+    global.prisma = new PrismaClient({ adapter }); // Pass the adapter here!
   }
   prisma = global.prisma;
 }
