@@ -23,8 +23,7 @@ const Footer: React.FC = () => {
             />
           </div>
           <p className="text-sm text-gray-600 leading-relaxed max-w-sm mx-auto lg:mx-0">
-           Established in 2000, Multiverse has evolved into a leading Ethiopian enterprise group shaping the nation’s growth. From industry and real estate to trade finance, electronics, and global commerce, we integrate local strength with international reach. For more than two decades, our subsidiaries have partnered with governments, businesses, and institutions to create jobs, deliver impactful projects, and drive sustainable progress across Ethiopia and beyond.
-
+Established in 2000, Multiverse has evolved into a leading Ethiopian enterprise group shaping the nation’s growth. From industry and real estate to trade finance, electronics, and global commerce, we integrate local strength with international reach. 
           </p>
         </div>
 
