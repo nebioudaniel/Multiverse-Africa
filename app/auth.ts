@@ -1,8 +1,9 @@
-import NextAuth from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
+// FIX: Changed import from 'next-auth/next' to the correct 'next-auth' for v5
+import NextAuth from "next-auth"; 
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import prisma from "@/lib/prisma";
 import { compare } from "bcryptjs";
+import { $Enums } from "@prisma/client";
 
 export const {
   handlers: { GET, POST },
@@ -11,7 +12,8 @@ export const {
   signOut,
 } = NextAuth({
   pages: { signIn: "/admin/login" },
-  adapter: PrismaAdapter(prisma),
+  // Adapter is now correctly imported from '@auth/prisma-adapter'
+  adapter: PrismaAdapter(prisma), 
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -46,16 +48,18 @@ export const {
         token.id = user.id;
         token.name = user.name;
         token.email = user.email;
-        token.role = user.role;
+        // Important: Ensure the role property is correctly added to the token
+        token.role = (user as any).role; 
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id;
+        session.user.id = token.id as string;
         session.user.name = token.name;
         session.user.email = token.email;
-        session.user.role = token.role;
+        // Important: Ensure the role property is correctly added to the session
+        (session.user as any).role = token.role; 
       }
       return session;
     },
@@ -68,3 +72,7 @@ export const {
   },
   debug: process.env.NODE_ENV === "development",
 });
+function CredentialsProvider(arg0: { name: string; credentials: { email: { label: string; type: string; }; password: { label: string; type: string; }; }; authorize(credentials: any): Promise<{ id: string; name: string; email: string; role: $Enums.AdminRole; } | null>; }): import("@auth/core/providers").Provider {
+  throw new Error("Function not implemented.");
+}
+

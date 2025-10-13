@@ -56,8 +56,12 @@ const Partners = () => {
   );
 
   return (
-    <div id="main-content" className="py-12 sm:py-20 bg-white dark:bg-gray-900 overflow-hidden">
-      <div className="container mx-auto px-4">
+    // ENSURING NO HORIZONTAL OVERFLOW: Added w-full and max-w-full 
+    // The existing 'overflow-hidden' is crucial here.
+    <div id="main-content" className="py-12 sm:py-20 bg-white dark:bg-gray-900 overflow-hidden w-full max-w-full">
+      
+      {/* Container ensures proper max width and center alignment */}
+      <div className="container mx-auto px-4 w-full">
         {/* Heading */}
         <h2 className="text-center text-3xl sm:text-5xl font-extrabold tracking-tight text-gray-900 dark:text-white mb-4">
           Trusted by our{' '}
@@ -87,7 +91,10 @@ const Partners = () => {
             {partnerLogos.concat(partnerLogos).map((logo, index) => (
               <CarouselItem
                 key={index}
-                className="basis-1/3 sm:basis-1/5 md:basis-1/6 lg:basis-1/8"
+                // Slightly reduced mobile basis to basis-1/4 on small screens 
+                // for tighter logo grouping if needed, but basis-1/3 is often best.
+                // Sticking to basis-1/3 for 3 logos on most phones.
+                className="basis-1/3 sm:basis-1/5 md:basis-1/6 lg:basis-1/8" 
               >
                 <div className="p-3 sm:p-5 flex items-center justify-center">
                   <Image
@@ -95,7 +102,8 @@ const Partners = () => {
                     alt={logo.alt}
                     width={100}
                     height={40}
-                    className="object-contain max-w-[80px] sm:max-w-[100px] md:max-w-[120px] h-auto"
+                    // Ensuring image width is constrained on all screen sizes
+                    className="object-contain max-w-[70px] xs:max-w-[80px] sm:max-w-[100px] md:max-w-[120px] h-auto"
                   />
                 </div>
               </CarouselItem>
@@ -105,17 +113,23 @@ const Partners = () => {
       </div>
 
       {/* Our Partners Section - New Section Added Here */}
-      <section className="bg-white dark:bg-zinc-900 py-20 px-6 lg:px-12">
+      <section className="bg-white dark:bg-zinc-900 py-20 px-6 lg:px-12 w-full">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
+            <h3 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-4">Our Core Areas</h3>
             <p className="mt-4 text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto">
               Discover the core areas that define our commitment to building a better future.
             </p>
           </div>
           
+          {/* Responsive Grid: 1 column on mobile, 2 on small screens, 3 on large screens */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {partners.map((card, index) => (
-              <div key={index} className="group relative overflow-hidden rounded-2xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 transition-all duration-300 hover:shadow-xl hover:border-blue-500 dark:hover:border-blue-500">
+              <a 
+                key={index}
+                href={card.link}
+                className="group relative overflow-hidden rounded-2xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 transition-all duration-300 hover:shadow-xl hover:border-blue-500 dark:hover:border-blue-500 block focus:outline-none focus:ring-4 focus:ring-blue-500/50"
+              >
                 <div className="relative h-56">
                   <Image
                     src={card.imageUrl}
@@ -129,7 +143,7 @@ const Partners = () => {
                   <h3 className="text-xl font-bold text-zinc-900 dark:text-white mb-2">{card.title}</h3>
                   <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4 flex-grow">{card.description}</p>
                 </div>
-              </div>
+              </a>
             ))}
           </div>
         </div>

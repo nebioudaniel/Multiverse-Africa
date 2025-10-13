@@ -13,6 +13,7 @@ import { WorldMapDemo } from '@/components/world/page';
 import WhoWeAre from '@/components/whoweare/page';
 import HeroWithProjectPreview from '@/components/sh/page';
 import OxytaneProductPage from '@/components/ol/page';
+import CleanMobilityHomeCard from '@/components/Dij/page';
 // The useTranslation hook was not used in the original component, so it's been removed for cleaner code.
 // If you need to add translation later, you can re-import and use it.
 
@@ -29,6 +30,7 @@ export default function Page() {
         <WhatWeDo />
         <HeroWithProjectPreview />
         <OxytaneProductPage />
+        <CleanMobilityHomeCard />
         <Last />
         <WorldMapDemo />
         <Footer />

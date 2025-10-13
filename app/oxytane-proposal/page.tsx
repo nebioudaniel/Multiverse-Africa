@@ -89,7 +89,6 @@ const OxytaneProposalPage = () => {
           {/* Section 1: Environmental Leadership and Carbon Credits */}
          <AnimatedContentSection delay={0.2}>
   <h2 className="text-3xl font-bold tracking-tight text-center mb-12 text-zinc-900 dark:text-white">
-      The <span className='text-teal-600'>Multiverse Africa PLC</span> Partnership: Product to Ethiopia
   </h2>
   <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-center">
     
