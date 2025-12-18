@@ -151,3 +151,35 @@ body {
 .animate-carousel.paused {
   animation-play-state: paused;
 }
+/* ============================================= */
+/* CSS FOR PRINT VIEW (REQUIRED FOR handlePrint) */
+/* ============================================= */
+@media print {
+    /* Hide non-content elements like the main header, sidebar, and export buttons */
+    /* This targets everything that is NOT the main content card container (.max-w-7xl) */
+    .print-only-content > :not(.max-w-7xl) {
+        display: none !important;
+    }
+
+    /* Make the main content card take up the full print width */
+    .print-only-content .max-w-7xl {
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* Hide the button bar (CardFooter) */
+    .print-only-content .CardFooter,
+    .print-only-content .flex-wrap {
+        display: none !important; 
+    }
+    
+    /* Ensure the main card and content are styled for print */
+    .print-only-content .Card,
+    .print-only-content .CardContent {
+        box-shadow: none !important;
+        border: none !important;
+        background-color: white !important;
+        padding: 0 !important;
+    }
+}

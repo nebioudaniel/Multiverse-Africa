@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
+ // FIX 1: Import Prisma types
 import * as z from 'zod';
 
 const prisma = new PrismaClient();
@@ -23,14 +24,15 @@ export async function GET(req: Request) {
       );
     }
 
-    const conditions: any[] = [];
+    // FIX 2: Explicitly type 'conditions' using Prisma.UserWhereInput[]
+    const conditions: Prisma.UserWhereInput[] = [];
 
     if (primaryPhoneNumber?.trim()) {
       conditions.push({ primaryPhoneNumber });
     }
 
     if (emailAddress?.trim()) {
-      conditions.push({ emailAddress }); // ✅ Corrected field name
+      conditions.push({ emailAddress });
     }
 
     if (conditions.length === 0) {
@@ -46,7 +48,7 @@ export async function GET(req: Request) {
       },
       select: {
         primaryPhoneNumber: true,
-        emailAddress: true, // ✅ Matches your Prisma schema
+        emailAddress: true,
       },
     });
 
@@ -70,12 +72,12 @@ export async function GET(req: Request) {
     );
 
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { message: "Invalid query parameters.", errors: error.errors },
-        { status: 400 }
-      );
-    }
+   if (error instanceof z.ZodError) {
+  return NextResponse.json(
+    { message: "Invalid query parameters.", errors: error.issues },
+    { status: 400 }
+  );
+}
 
     console.error("API: Error checking uniqueness:", error);
     return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });

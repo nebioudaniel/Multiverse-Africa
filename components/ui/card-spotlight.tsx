@@ -23,7 +23,8 @@ export const CardSpotlight = ({
     clientX,
     clientY,
   }: ReactMouseEvent<HTMLDivElement>) {
-    let { left, top } = currentTarget.getBoundingClientRect();
+    // FIX: Changed 'let' to 'const' for left and top
+    const { left, top } = currentTarget.getBoundingClientRect(); 
 
     mouseX.set(clientX - left);
     mouseY.set(clientY - top);

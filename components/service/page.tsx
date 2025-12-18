@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronRight, ShieldCheck, Handshake, RefreshCw, Factory, Users, Lightbulb } from 'lucide-react';
+import {  ShieldCheck, Handshake, RefreshCw, Factory, Users, Lightbulb } from 'lucide-react';
 
 // Our Values Data
 const values = [

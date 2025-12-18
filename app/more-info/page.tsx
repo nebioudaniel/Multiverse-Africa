@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import { Separator } from '@/components/ui/separator';
 import Footer from '@/components/footer/page';
 import Navbar from '@/components/Navbar/page';
-import { Car, Factory, Handshake, Network, BarChart2, Zap, UserCheck, ArrowLeft } from 'lucide-react';
+import { Network, Zap, UserCheck, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 const FutureVisionPage = () => {
@@ -97,7 +97,7 @@ const FutureVisionPage = () => {
                 EV Ecosystem <span className='text-blue-600'>Development</span>
               </h2>
               <p className="text-lg font-light text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                Building the backbone of Ethiopia’s green mobility future through local assembly and a nationwide EV charging network. This project aims to establish a robust infrastructure that supports the transition to electric vehicles, reducing the country's carbon footprint and dependence on fossil fuels.
+                Building the backbone of Ethiopia&apos;s green mobility future through local assembly and a nationwide EV charging network. This project aims to establish a robust infrastructure that supports the transition to electric vehicles, reducing the countrys carbon footprint and dependence on fossil fuels.
               </p>
             </div>
           </div>

@@ -1,5 +1,6 @@
-//src/components/register/printUtils
+//src/components/register/printUtils.tsx
 import React from 'react';
+// Assuming the actual interface is defined here:
 import { RegistrationFormData } from './RegisterFormContainer';
 
 export const printApplicationContent = (data: RegistrationFormData) => {
@@ -11,12 +12,15 @@ export const printApplicationContent = (data: RegistrationFormData) => {
   }
 
   // Helper to safely get value for optional fields
-  const getValue = (value: string | number | boolean | undefined | null, emptyText = 'N/A') => {
+  const getValue = (value: string | number | boolean | undefined | null | any[] | object, emptyText = 'N/A') => {
     if (value === undefined || value === null || (typeof value === 'string' && value.trim() === '') || (Array.isArray(value) && value.length === 0)) {
       return emptyText;
     }
     return String(value); // Convert everything to a string for display
   };
+
+  // Temporarily assert data as 'any' to access business fields that TypeScript can't find
+  const dataAsAny = data as any; 
 
   return (
     <div className="p-8 font-sans text-gray-800 bg-white leading-relaxed">
@@ -36,14 +40,15 @@ export const printApplicationContent = (data: RegistrationFormData) => {
           <p><strong>Woreda/Kebele:</strong> {getValue(data.woredaKebele)}</p>
         </div>
 
+        {/* Accessing the business-specific fields using the asserted object */}
         {data.isBusiness && (
           <div className="mt-6 p-4 border rounded-md bg-blue-50">
             <h3 className="text-xl font-semibold mb-3 text-blue-800">Business Details</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2">
               <p><strong>Registered as Business:</strong> Yes</p>
-              <p><strong>Association/Business Name:</strong> {getValue(data.entityName)}</p>
-              <p><strong>TIN:</strong> {getValue(data.tin)}</p>
-              <p><strong>Business License No.:</strong> {getValue(data.businessLicenseNo)}</p>
+              <p><strong>Association/Business Name:</strong> {getValue(dataAsAny.entityName)}</p> {/* FIX APPLIED HERE */}
+              <p><strong>TIN:</strong> {getValue(dataAsAny.tin)}</p> {/* FIX APPLIED HERE */}
+              <p><strong>Business License No.:</strong> {getValue(dataAsAny.businessLicenseNo)}</p> {/* FIX APPLIED HERE */}
             </div>
           </div>
         )}

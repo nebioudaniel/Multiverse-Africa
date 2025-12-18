@@ -5,7 +5,9 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { locales, localeNames, defaultLocale } from '@/i18n/locales';
+// Assuming this provides locales: string[] and localeNames: Record<string, string>
+// The error suggests that 'locales' is inferred as string[] but the type of its items is strictly '"am" | "en"'
+import { locales, localeNames, defaultLocale } from '@/i18n/locales'; 
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,26 +17,52 @@ import {
 import { Button } from '@/components/ui/button';
 import { Menu, X } from 'lucide-react';
 
+// Define a type for your valid locales based on your i18n setup
+// This must match the literal strings in your 'locales' array from '@/i18n/locales'
+type Locale = typeof locales[number]; 
+// Assuming this resolves to: type Locale = "am" | "en";
+
+// Define a type for the segment (it's potentially a locale or just a path segment)
+type SegmentType = Locale | string;
+
+
 export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const currentLocale = pathname.split('/')[1] || defaultLocale;
-  const displayLocale = locales.includes(currentLocale as any)
-    ? currentLocale
-    : defaultLocale;
+  // Extract the potential locale from the path
+  const pathParts = pathname.split('/');
+  
+  // The first path segment is generally a generic string:
+  const segmentLocale: SegmentType = pathParts[1] || ''; // Initialize as string
+
+  // FIX: Typecast segmentLocale to the array element type when calling includes().
+  // This tells TypeScript to trust that `segmentLocale` *might* be a valid Locale type.
+  const currentLocale = locales.includes(segmentLocale as Locale) 
+    ? segmentLocale as Locale // Type assertion is safe after checking includes()
+    : defaultLocale as Locale; 
+    
+  // Use the valid locale for display
+  const displayLocale = currentLocale;
+
 
   const changeLocale = (newLocale: string) => {
+    // We can safely treat newLocale as Locale here because it comes from the locales map/array
+    const newLocaleTyped = newLocale as Locale; 
+    
+    // 1. Get the path *without* the current locale prefix
     const pathWithoutLocale = pathname.startsWith(`/${displayLocale}`)
       ? pathname.substring(`/${displayLocale}`.length)
       : pathname;
 
+    // 2. Ensure it starts with a slash
     const finalPathWithoutLocale = pathWithoutLocale.startsWith('/')
       ? pathWithoutLocale
       : `/${pathWithoutLocale}`;
 
-    router.push(`/${newLocale}${finalPathWithoutLocale}`);
+    // 3. Navigate to the new locale path
+    router.push(`/${newLocaleTyped}${finalPathWithoutLocale}`);
     setIsMobileMenuOpen(false);
   };
 
@@ -64,7 +92,8 @@ export default function Navbar() {
               {locales.map((locale) => (
                 <DropdownMenuItem
                   key={locale}
-                  onClick={() => changeLocale(locale)}
+                  // New locale is passed as string, but handled correctly inside changeLocale
+                  onClick={() => changeLocale(locale)} 
                 >
                   {localeNames[locale]}
                 </DropdownMenuItem>

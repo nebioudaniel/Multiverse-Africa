@@ -1,10 +1,11 @@
-// app/admin/activity/page.tsx
+// ActivityLogPageClient.tsx
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+// FIX 1: Removed unused imports CardHeader, CardTitle
+import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -60,7 +61,8 @@ const getActionIcon = (action: string) => {
 };
 
 export default function ActivityLogPageClient() {
-  const { data: session, status } = useSession();
+  // Assuming the next-auth.d.ts type extension is correctly implemented now.
+  const { data: session, status } = useSession(); 
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -78,12 +80,14 @@ export default function ActivityLogPageClient() {
   const [selectedActivity, setSelectedActivity] = useState<ActivityLog | null>(null);
 
   // Redirect if not MAIN_ADMIN
-  useEffect(() => {
-    if (status === 'loading') return;
-    if (session?.user?.role !== 'MAIN_ADMIN') {
-      router.push('/admin/dashboard');
-    }
-  }, [session, status, router]);
+useEffect(() => {
+  // 🛑 FIX APPLIED: Use type assertion for session.user.role check on page load
+  if (status === 'loading') return; // Always check loading first
+
+  if ((session?.user as any)?.role !== 'MAIN_ADMIN') {
+    router.push("/admin/dashboard");
+  }
+}, [session, status, router]);
 
   // Fetch Admins for filter dropdown
   const fetchAdmins = useCallback(async () => {
@@ -92,15 +96,17 @@ export default function ActivityLogPageClient() {
       if (!res.ok) throw new Error('Failed to fetch admins');
       const data: AdminUser[] = await res.json();
       setAdmins([{ id: 'all', fullName: 'All Administrators', email: null, role: 'ALL' }, ...data]);
-    } catch (err: any) {
-      console.error('Error fetching admins:', err);
+    } catch (err: unknown) { // FIX 2: Changed 'err: any' to 'err: unknown'
+      const errorMessage = err instanceof Error ? err.message : "An unknown error occurred.";
+      console.error('Error fetching admins:', errorMessage);
       setError('Failed to load administrators for filtering.');
     }
   }, []);
 
   // Fetch Activity Logs
   const fetchActivityLogs = useCallback(async () => {
-    if (status === 'loading' || session?.user?.role !== 'MAIN_ADMIN') return;
+   // 🛑 FIX APPLIED: Use type assertion for session.user.role check before fetch
+   if (status === 'loading' || (session?.user as any)?.role !== 'MAIN_ADMIN') return ;
 
     setLoading(true);
     setError(null);
@@ -117,20 +123,22 @@ export default function ActivityLogPageClient() {
       if (!res.ok) throw new Error('Failed to fetch activity logs');
       const data: ActivityLog[] = await res.json();
       setActivities(data);
-    } catch (err: any) {
-      console.error('Error fetching activity logs:', err);
+    } catch (err: unknown) { // FIX 2: Changed 'err: any' to 'err: unknown'
+      const errorMessage = err instanceof Error ? err.message : "An unknown error occurred.";
+      console.error('Error fetching activity logs:', errorMessage);
       setError('Failed to load activity logs.');
     } finally {
       setLoading(false);
     }
   }, [session, status, selectedAdminId, searchTerm]);
 
-  useEffect(() => {
-    if (session?.user?.role === 'MAIN_ADMIN') {
-      fetchAdmins();
-      fetchActivityLogs();
-    }
-  }, [session, fetchAdmins, fetchActivityLogs]);
+useEffect(() => {
+  // 🛑 FIX APPLIED: Use type assertion for session.user.role check on initial load/change
+  if ((session?.user as any)?.role === 'MAIN_ADMIN') {
+    fetchAdmins();
+    fetchActivityLogs();
+  }
+}, [session, fetchAdmins, fetchActivityLogs]);
 
   // Update URL params when filters change
   useEffect(() => {
@@ -165,7 +173,8 @@ export default function ActivityLogPageClient() {
     );
   }
 
-  if (session?.user?.role !== 'MAIN_ADMIN') {
+ // 🛑 FIX APPLIED: Use type assertion for rendering guard
+ if ((session?.user as any)?.role !== 'MAIN_ADMIN') {
     return (
       <div className="flex justify-center items-center h-screen">
         <Alert variant="destructive">

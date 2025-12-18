@@ -1,4 +1,3 @@
-// components/ui/data-table.tsx
 "use client";
 
 import { useState } from "react";
@@ -26,17 +25,30 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
+// ✨ STEP 1: DEFINE THE CUSTOM META TYPE (matching your UserListPage usage)
+export interface CustomTableMeta {
+  isLoading: boolean;
+  refetch: () => Promise<void>;
+}
+
+// ✨ STEP 2: AUGMENT TANSTACK TABLE TYPES
+declare module '@tanstack/react-table' {
+  interface TableMeta<TData> extends CustomTableMeta {}
+}
+
+// ✨ STEP 3: UPDATE DATATABLE PROPS TO INCLUDE 'meta'
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
-  // 💡 FIX: Use a prop for the column ID to filter by
   filterColumnId?: string;
+  meta?: CustomTableMeta; // ADDED PROP
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
-  filterColumnId, // 💡 FIX: Destructure the prop here
+  filterColumnId,
+  meta, // DESTRUCTURED PROP
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -50,13 +62,16 @@ export function DataTable<TData, TValue>({
     getSortedRowModel: getSortedRowModel(),
     onColumnFiltersChange: setColumnFilters,
     getFilteredRowModel: getFilteredRowModel(),
+    // PASSED PROP TO useReactTable
+    meta, 
     state: {
       sorting,
       columnFilters,
     },
   });
 
-  // 💡 FIX: Use the prop to get the filter column
+  // ... rest of the component (no change needed here)
+
   const filterColumn = filterColumnId ? table.getColumn(filterColumnId) : null;
 
   return (
@@ -64,7 +79,7 @@ export function DataTable<TData, TValue>({
       {filterColumn && (
         <div className="flex items-center py-4">
           <Input
-            placeholder={`Filter by ${filterColumnId}...`} // 💡 FIX: Dynamic placeholder
+            placeholder={`Filter by ${filterColumnId}...`}
             value={(filterColumn.getFilterValue() as string) ?? ""}
             onChange={(event) =>
               filterColumn.setFilterValue(event.target.value)

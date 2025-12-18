@@ -110,7 +110,7 @@ model Admin {
   registeredBy          Admin?    @relation("AdminRegistrations", fields: [registeredById], references: [id], onDelete: SetNull)
   registeredAdmins      Admin[]   @relation("AdminRegistrations") // Admins registered by this admin
  performedActivities   ActivityLog[]
- lastViewedActivityTimestamp DateTime? // This is the missing back-relation
+ lastViewedActivityTimestamp DateTime?  // This is the missing back-relation
 }
 
 // Enum for Admin Roles
@@ -145,8 +145,13 @@ model Application {
   // Snapshot of applicant details at time of application creation/last update
   applicantFullName             String?
   gender                        String?
+  fatherName              String?
+  grandfatherName         String?
+  preferredVehicleType    String?
+  vehicleQuantity         Int? //
   idNumber                      String?
   primaryPhoneNumber            String?
+  alternativePhoneNumber  String?
   applicantEmailAddress         String?
   residentialAddress            String?
   region                        String?
@@ -177,7 +182,7 @@ model Application {
 
   // Financing Information
   preferredFinancingInstitution String?
-  loanAmountRequested           Float
+  loanAmountRequested           Float ?
   loanApplicationStatus         LoanApplicationStatus @default(Pending)
   downPaymentProofUrl           String?
   bankReferenceNumber           String?
@@ -251,4 +256,14 @@ model ActivityLog {
   @@index([performedById])
   @@index([entityId])
   @@index([createdAt])
+}
+model ContactMessage {
+  id           String    @id @default(uuid())
+  name         String
+  email        String
+  interestedIn String
+  phone        String?   // Optional field
+  message      String
+  isRead       Boolean   @default(false)
+  createdAt    DateTime  @default(now())
 }

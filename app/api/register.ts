@@ -4,6 +4,14 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+// Helper function to safely extract an error message
+const getErrorMessage = (err: unknown): string => {
+    if (err instanceof Error) {
+        return err.message;
+    }
+    return "An unknown error occurred.";
+};
+
 // The correct function signature for App Router dynamic routes
 export async function GET(
   req: Request,
@@ -46,10 +54,11 @@ export async function GET(
     }
 
     return NextResponse.json(user);
-  } catch (error: any) {
+  } catch (error: unknown) { // FIX: Changed 'any' to 'unknown'
+    const errorMessage = getErrorMessage(error);
     console.error("GET /api/user/[id] error:", error);
     return NextResponse.json(
-      { message: "Internal Server Error", error: error.message },
+      { message: "Internal Server Error", error: errorMessage },
       { status: 500 }
     );
   } finally {

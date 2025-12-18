@@ -1,24 +1,24 @@
-// src/app/[locale]/register/TermsDialog.tsx (New File)
-import React, { useState } from 'react';
+// src/app/[locale]/register/TermsDialog.tsx (Updated File)
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Globe } from 'lucide-react';
+import { X } from 'lucide-react';
 
+// The content now only accepts the English string
 interface TermsDialogProps {
     isOpen: boolean;
     onClose: () => void;
     content: {
         english: string;
-        amharic: string;
     };
-    locale: string;
+    // The locale prop is no longer needed since we only display English
+    // locale: string; 
 }
 
-const TermsDialog: React.FC<TermsDialogProps> = ({ isOpen, onClose, content, locale }) => {
-    // State to toggle between English and Amharic within the dialog
-    const [viewLanguage, setViewLanguage] = useState<'english' | 'amharic'>(locale === 'am' ? 'amharic' : 'english');
-
-    const currentContent = viewLanguage === 'english' ? content.english : content.amharic;
-    const currentTitle = viewLanguage === 'english' ? "Website Registration Agreement" : "ድረ-ገጽ የምዝገባ ስምምነት";
+const TermsDialog: React.FC<TermsDialogProps> = ({ isOpen, onClose, content }) => {
+    
+    // Hardcode to English content and title
+    const currentContent = content.english;
+    const currentTitle = "Website Registration Agreement";
 
     if (!isOpen) return null;
 
@@ -44,20 +44,8 @@ const TermsDialog: React.FC<TermsDialogProps> = ({ isOpen, onClose, content, loc
                         <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center">
                             {currentTitle}
                         </h2>
+                        {/* The language toggle button is removed */}
                         <div className="flex items-center space-x-3">
-                            {/* Language Toggle Button */}
-                            <button
-                                onClick={() => setViewLanguage(viewLanguage === 'english' ? 'amharic' : 'english')}
-                                className="flex items-center px-3 py-1 text-sm rounded-full border transition-colors duration-200"
-                                style={{
-                                    borderColor: viewLanguage === 'english' ? '#3b82f6' : '#10b981',
-                                    color: viewLanguage === 'english' ? '#3b82f6' : '#10b981',
-                                    backgroundColor: 'transparent'
-                                }}
-                            >
-                                <Globe className="w-4 h-4 mr-1" />
-                                {viewLanguage === 'english' ? "Amharic (አማርኛ)" : "English"}
-                            </button>
                             {/* Close Button */}
                             <button
                                 onClick={onClose}
@@ -71,7 +59,6 @@ const TermsDialog: React.FC<TermsDialogProps> = ({ isOpen, onClose, content, loc
 
                     {/* Content Body */}
                     <div className="p-6 overflow-y-auto max-h-[75vh] whitespace-pre-line text-gray-700 dark:text-gray-300">
-                        {/* The content is rendered using dangerouslySetInnerHTML because it includes raw HTML-like formatting (like list items and bolding) that Markdown won't interpret correctly in a string. */}
                         <div dangerouslySetInnerHTML={{ __html: currentContent }} />
                     </div>
 
@@ -81,7 +68,7 @@ const TermsDialog: React.FC<TermsDialogProps> = ({ isOpen, onClose, content, loc
                             onClick={onClose}
                             className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold"
                         >
-                            {viewLanguage === 'english' ? "Close & Return to Registration" : "ዝጋ እና ወደ ምዝገባ ተመለስ"}
+                            Close & Return to Registration
                         </button>
                     </div>
                 </motion.div>

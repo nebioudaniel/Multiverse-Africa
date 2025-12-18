@@ -1,31 +1,23 @@
-// src/app/layout.tsx
-import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import "./globals.css"; // CORRECT AND ONLY PLACE FOR GLOBAL CSS IMPORT
-import { Toaster } from "@/components/ui/sonner";
-import { SessionProvider } from "next-auth/react";
- // Assuming your Navbar is directly in components/Navbar.tsx
+import "./globals.css";
+import { SessionProvider } from "@/components/session-provider";
+import { getServerSession } from "next-auth/next"; // ✅ CORRECT
+import { authOptions } from "@/lib/auth";
 
 const inter = Inter({ subsets: ["latin"] });
 
-export const metadata: Metadata = {
-  title: "Minibus Loan Application",
-  description: "Application for minibus loans",
-};
-
-export default function RootLayout({
+export default async function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
+  const session = await getServerSession(authOptions); // ✅ v4-compatible
+
   return (
     <html lang="en">
       <body className={inter.className}>
-        <SessionProvider>
-          <main className="pt-1.5"> {/* Adjust padding-top based on your navbar height */}
-            {children}
-          </main>
-          <Toaster />
+        <SessionProvider session={session}>
+          {children}
         </SessionProvider>
       </body>
     </html>

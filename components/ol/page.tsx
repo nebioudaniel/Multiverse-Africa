@@ -4,16 +4,16 @@
 import React from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { Zap, Gauge, DollarSign, Award, ArrowLeft, ChevronRight } from 'lucide-react'; // Added ChevronRight icon
+import { Zap, Gauge, DollarSign, Award,  ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 
-// Assuming these components exist in the project structure
-import Footer from '@/components/footer/page';
-import Navbar from '@/components/Navbar/page';
-import { Separator } from '@/components/ui/separator';
-
-// Reusable Content Section with animation
-const AnimatedContentSection = ({ children, delay = 0 }) => (
+// --- FIX: Define the Prop Types using React.PropsWithChildren ---
+// 1. Define the specific props (in this case, only optional 'delay')
+interface AnimatedContentProps {
+    delay?: number;
+}
+// 2. Use React.PropsWithChildren to automatically include the 'children' prop
+const AnimatedContentSection: React.FC<React.PropsWithChildren<AnimatedContentProps>> = ({ children, delay = 0 }) => (
   <motion.section
     initial={{ opacity: 0, y: 50 }}
     whileInView={{ opacity: 1, y: 0 }}
@@ -74,7 +74,7 @@ const OxytaneProductPage = () => {
                 className="relative w-full aspect-[3/4] rounded-2xl overflow-hidden shadow-xl lg:col-span-1"
               >
                 <Image
-                  src="/images/oxytane (1).png" // Placeholder image for the can, based on page 7 of the PDF
+                  src="/images/oxytane (1).png" 
                   alt="Oxytane 1 Litre Can"
                   fill
                   sizes="(max-width: 1024px) 100vw, 30vw"
@@ -120,7 +120,7 @@ const OxytaneProductPage = () => {
                 </ul>
 
                 {/* Read More Button */}
-                <Link href="/oxytane-proposal" passHref>
+                <Link href="/oxytane-proposal" passHref legacyBehavior>
                     <motion.a
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}

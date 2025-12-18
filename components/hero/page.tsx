@@ -1,6 +1,6 @@
 import React from 'react';
-import { PhoneCall, ArrowRight, ArrowDown } from 'lucide-react'; // Import ArrowDown
-import Image from 'next/image';
+import { PhoneCall,  ArrowDown } from 'lucide-react'; // Import ArrowDown
+import Image from 'next/image'; // Import Next.js Image component
 
 const App = () => {
   return (
@@ -61,25 +61,32 @@ const App = () => {
         <div className="hidden lg:grid lg:w-1/2 grid-cols-2 grid-rows-2 gap-6 relative p-4">
           {/* Main image - slightly larger or more prominent */}
           <div className="col-span-2 row-span-1 relative h-72">
-            <img
+            <Image // FIX: Replaced <img> with <Image>
               src="/images/h1.png"
               alt="Modern office building"
-              className="rounded-xl shadow-md w-full h-full object-cover"
+              fill // Use fill to make it cover the parent div
+              className="rounded-xl shadow-md object-cover"
+              sizes="(max-width: 1024px) 100vw, 50vw" // Add sizes prop
+              priority // Mark the first image as priority for LCP
             />
           </div>
           {/* Smaller supporting images */}
           <div className="relative h-72">
-            <img
+            <Image // FIX: Replaced <img> with <Image>
               src="/images/h2.png"
               alt="Team collaboration"
-              className="rounded-xl shadow-md w-full h-full object-cover"
+              fill // Use fill to make it cover the parent div
+              className="rounded-xl shadow-md object-cover"
+              sizes="(max-width: 1024px) 50vw, 25vw" // Add sizes prop
             />
           </div>
           <div className="relative h-72">
-            <img
+            <Image // FIX: Replaced <img> with <Image>
               src="/images/h3.png"
               alt="City skyline at sunset"
-              className="rounded-xl shadow-md w-full h-full object-cover"
+              fill // Use fill to make it cover the parent div
+              className="rounded-xl shadow-md object-cover"
+              sizes="(max-width: 1024px) 50vw, 25vw" // Add sizes prop
             />
           </div>
         </div>

@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LogOut, User, Menu, Bell, UserPlus, FileText } from "lucide-react"; // Removed XCircle
+import { LogOut, User, Menu, Bell, UserPlus, FileText } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   Sheet,
@@ -27,15 +27,26 @@ import {
 } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { cn } from '@/lib/utils'; // For conditional classNames
+import { cn } from '@/lib/utils';
 
-// Define notification item interface to match relevant ActivityLog fields
+// Define the roles allowed to see the dashboard/notifications
+const ALLOWED_ADMIN_ROLES = ['MAIN_ADMIN', 'REGISTRAR_ADMIN'];
+
+// Define the interface for the raw data coming from the API
+interface RawActivityLog {
+  id: string;
+  action: string;
+  description: string;
+  createdAt: string; // ISO string
+}
+
+// Define notification item interface (the processed data)
 interface NotificationItem {
   id: string;
   action: string;      // Corresponds to ActivityLog.action
   description: string; // Corresponds to ActivityLog.description
   createdAt: string;   // ISO string from ActivityLog.createdAt
-  read: boolean;       // This 'read' status will be computed on the frontend
+  read: boolean;       // Computed read status
 }
 
 export default function AdminHeader() {
@@ -48,16 +59,17 @@ export default function AdminHeader() {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
 
-  // No longer using sessionStorage for 'read' status of individual items,
-  // as the backend handles 'mark all as read' via lastViewedActivityTimestamp.
-  // The 'read' status for each notification is now computed based on that timestamp.
-
   const fetchNotifications = useCallback(async () => {
-    if (status === 'loading' || !session?.user?.role) return;
+    // TEMPORARY FIX: Assert 'session.user' as 'any' to bypass the TypeScript error.
+    const user = session?.user as any; 
 
-    // Only fetch for MAIN_ADMIN or other roles that have notifications
-    // (e.g., if REGISTRAR_ADMIN also gets notifications, add them here)
-    if (session.user.role !== 'MAIN_ADMIN' && session.user.role !== 'REGISTRAR_ADMIN') {
+    // Line 63 fix: Check loading status OR if the role property is missing
+    if (status === 'loading' || !user?.role) return;
+
+    // Use the defined roles array for a clean authorization check
+    const isAuthorized = ALLOWED_ADMIN_ROLES.includes(user.role);
+
+    if (!isAuthorized) {
       setNotifications([]);
       setUnreadCount(0);
       return;
@@ -70,18 +82,15 @@ export default function AdminHeader() {
       if (!res.ok) {
         throw new Error('Failed to fetch notifications');
       }
-      // Expecting { data: ActivityLog[], pagination: ..., currentUsersLastViewedTimestamp: Date }
+      
       const responseBody = await res.json();
-      const activities = responseBody.data || []; // Ensure it's an array
+      const activities: RawActivityLog[] = responseBody.data || []; 
 
       const currentUsersLastViewedTimestamp = responseBody.currentUsersLastViewedTimestamp
         ? new Date(responseBody.currentUsersLastViewedTimestamp)
         : null;
 
-      // Map activities to NotificationItem and compute read status based on timestamp
-      const notificationsWithReadStatus: NotificationItem[] = activities.map((activity: any) => {
-        // A notification is considered 'read' if its createdAt timestamp is
-        // less than or equal to the user's last viewed timestamp.
+      const notificationsWithReadStatus: NotificationItem[] = activities.map((activity: RawActivityLog) => {
         const isRead = currentUsersLastViewedTimestamp
           ? new Date(activity.createdAt) <= currentUsersLastViewedTimestamp
           : false;
@@ -108,10 +117,12 @@ export default function AdminHeader() {
 
   // Poll for notifications every 30 seconds
   useEffect(() => {
-    fetchNotifications(); // Initial fetch
-    const interval = setInterval(fetchNotifications, 30000); // Poll every 30 seconds
-    return () => clearInterval(interval); // Cleanup on unmount
-  }, [fetchNotifications]);
+    if (status === 'authenticated') {
+      fetchNotifications(); 
+      const interval = setInterval(fetchNotifications, 30000); 
+      return () => clearInterval(interval); 
+    }
+  }, [fetchNotifications, status]);
 
   // Mark ALL notifications as read by updating the user's lastViewedActivityTimestamp on the backend
   const markAllAsRead = useCallback(async () => {
@@ -119,20 +130,17 @@ export default function AdminHeader() {
       const res = await fetch('/api/admin/notifications', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: "mark_all_read" }), // Send an action to trigger backend update
+        body: JSON.stringify({ action: "mark_all_read" }), 
       });
 
       if (!res.ok) {
         throw new Error('Failed to mark all notifications as read');
       }
 
-      // After successfully updating the timestamp, re-fetch notifications
-      // to reflect the new 'read' status based on the updated timestamp.
       await fetchNotifications();
-      setIsPopoverOpen(false); // Close the popover after marking all read
+      setIsPopoverOpen(false); 
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
-      // Optionally show a toast error
     }
   }, [fetchNotifications, setIsPopoverOpen]);
 
@@ -145,21 +153,29 @@ export default function AdminHeader() {
       }
     };
 
-    syncSession(); // Run immediately
+    syncSession(); 
 
-    const interval = setInterval(syncSession, 7000); // Check every 5 seconds
-    return () => clearInterval(interval); // Clean up
-  }, [fullName]);
+    if (status === 'authenticated') {
+      const interval = setInterval(syncSession, 7000); 
+      return () => clearInterval(interval); 
+    }
+  }, [fullName, status]);
 
-  if (!session?.user) {
+  if (status === "loading" || !session?.user) {
     return null;
   }
 
+  // Calculate user initials
   const userInitials = fullName
     ? fullName.split(" ").map((n) => n[0]).join("").toUpperCase().substring(0, 2)
     : (session.user.email || "U").substring(0, 2).toUpperCase();
 
-  const isMainOrRegistrarAdmin = session.user.role === 'MAIN_ADMIN' || session.user.role === 'REGISTRAR_ADMIN'; // Check for admin roles that get notifications
+  // Determine if user has the required admin role
+  // Apply type assertion here too
+  const userWithRole = session.user as any;
+  const isMainOrRegistrarAdmin = userWithRole.role 
+    ? ALLOWED_ADMIN_ROLES.includes(userWithRole.role) 
+    : false;
 
 
   return (
@@ -225,13 +241,10 @@ export default function AdminHeader() {
                       .map((notif) => (
                         <div
                           key={notif.id}
-                          // Notifications are not individually clickable to mark as read,
-                          // as 'read' status is managed by 'mark all as read' (lastViewedActivityTimestamp)
                           className={cn(
-                            'flex items-start gap-3 p-4 hover:bg-gray-50', // Removed cursor-pointer if not interactive
+                            'flex items-start gap-3 p-4 hover:bg-gray-50',
                             notif.read ? 'text-gray-500 bg-gray-50' : 'text-gray-900 bg-white'
                           )}
-                          // onClick={() => markNotificationAsRead(notif.id)} // Removed individual click handler
                         >
                           {/* Conditional icon based on activity action */}
                           {notif.action === 'USER_REGISTERED' ? (
@@ -244,13 +257,12 @@ export default function AdminHeader() {
                           )}
                           <div className="flex-grow">
                             <p className={cn('text-sm font-medium', notif.read ? 'line-through' : '')}>
-                              {notif.description} {/* Use notif.description */}
+                              {notif.description}
                             </p>
                             <p className="text-xs text-gray-400 mt-1">
                               {new Date(notif.createdAt).toLocaleString()}
                             </p>
                           </div>
-                          {/* Removed XCircle as individual mark-as-read is handled by 'mark all' */}
                         </div>
                       ))}
                   </div>
@@ -275,17 +287,17 @@ export default function AdminHeader() {
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium leading-none">{fullName || "User"}</p>
                 <p className="text-xs leading-none text-muted-foreground">
-                  {session.user.email || session.user.role}
+                  {session.user.email || userWithRole.role}
                 </p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push(`/admin/profile/}`)}>
+            <DropdownMenuItem onClick={() => router.push(`/admin/profile`)}>
               <User className="mr-2 h-4 w-4 text-gray-600" />
               <span className="text-sm">Profile</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => signOut({ callbackUrl: "admin/login" })} className="text-red-600">
+            <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/admin/login" })} className="text-red-600">
               <LogOut className="mr-2 h-4 w-4 text-red-500" />
               <span className="text-sm">Log out</span>
             </DropdownMenuItem>

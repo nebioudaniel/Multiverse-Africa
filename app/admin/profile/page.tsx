@@ -1,3 +1,4 @@
+// app/admin/profile/page.tsx (Fixed and Complete)
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
@@ -22,6 +23,18 @@ interface UserProfile {
   createdAt: string;
   updatedAt: string;
 }
+
+// Helper function to safely extract an error message
+const getErrorMessage = (err: unknown): string => {
+    if (err instanceof Error) {
+        return err.message;
+    }
+    if (typeof err === 'object' && err !== null && 'message' in err && typeof (err as { message: unknown }).message === 'string') {
+        return (err as { message: string }).message;
+    }
+    return "An unexpected error occurred.";
+}
+
 
 export default function ProfilePage() {
   const { data: session, status, update: updateSession } = useSession();
@@ -52,15 +65,17 @@ export default function ProfilePage() {
       setFullName(data.fullName);
       setEmailAddress(data.emailAddress || "");
       setPrimaryPhoneNumber(data.primaryPhoneNumber || "");
-    } catch (err: any) {
-      toast.error("Error loading profile", { description: err.message });
-      setError(err.message);
+    } catch (err: unknown) { // FIX: Changed 'any' to 'unknown'
+      const errorMessage = getErrorMessage(err);
+      toast.error("Error loading profile", { description: errorMessage });
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
   // Controls editability: Only MAIN_ADMIN and APPLICANT can edit.
+  // Note: Given this is inside `/admin`, APPLICANT role might be unexpected, but we maintain the logic.
   const isEditable = userProfile?.role === "MAIN_ADMIN" || userProfile?.role === "APPLICANT";
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
@@ -87,6 +102,7 @@ export default function ProfilePage() {
       setUserProfile(updatedData);
       toast.success("Profile Updated successfully!");
 
+      // Update the NextAuth session to reflect the new name/email
       await updateSession({
         ...session,
         user: {
@@ -95,8 +111,9 @@ export default function ProfilePage() {
           email: updatedData.emailAddress,
         }
       });
-    } catch (err: any) {
-      toast.error("Profile update failed", { description: err.message });
+    } catch (err: unknown) { // FIX: Changed 'any' to 'unknown'
+      const errorMessage = getErrorMessage(err);
+      toast.error("Profile update failed", { description: errorMessage });
     } finally {
       setIsUpdating(false);
     }

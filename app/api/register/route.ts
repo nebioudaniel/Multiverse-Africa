@@ -3,9 +3,18 @@
 import { NextResponse } from 'next/server';
 import * as z from 'zod';
 import { PrismaClient } from '@prisma/client';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library'; // FIX 1: Import specific Prisma error
 
 // Initialize Prisma Client
 const prisma = new PrismaClient();
+
+// Helper function to safely extract an error message
+const getErrorMessage = (err: unknown): string => {
+    if (err instanceof Error) {
+        return err.message;
+    }
+    return "An unknown error occurred.";
+};
 
 // This Zod schema must be IDENTICAL to the fullRegistrationSchema used on your frontend
 const apiSchema = z.object({
@@ -124,9 +133,6 @@ export async function POST(req: Request) {
                 description: logDescription,
                 entityId: newUser.id,
                 entityType: "User",
-                // performedById is null here because the user is registering themselves, not an admin performing an action.
-                // If you want to link this to a specific admin (e.g., if an admin manually enters registrations),
-                // you would need to get the admin's ID from the session here.
             }
         });
         console.log("ActivityLog entry created for new user registration.");
@@ -138,8 +144,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ message: "Registration successful!", user: newUser }, { status: 200 });
 
-  } catch (error: any) {
-    if (error.code === 'P2002') {
+  } catch (error: unknown) { // FIX 2: Changed 'any' to 'unknown'
+    if (error instanceof PrismaClientKnownRequestError && error.code === 'P2002') {
       const targetField = (error.meta as { target: string[] })?.target?.[0];
       let errorMessage = "A user with this ";
       if (targetField === 'emailAddress') {
@@ -162,17 +168,20 @@ export async function POST(req: Request) {
     }
     if (error instanceof z.ZodError) {
       console.error("API: Zod Validation Error Details:");
-      error.errors.forEach(err => {
+     error.issues.forEach(err => {
         console.error(`  Path: ${err.path.join('.')}, Message: ${err.message}`);
       });
       return NextResponse.json(
-        { message: "Validation failed. Please check your inputs.", errors: error.errors },
+       // Corrected code for the JSON response payload:
+{ message: "Validation failed. Please check your inputs.", errors: error.issues },
         { status: 400 }
       );
     }
+    
+    const errorMessage = getErrorMessage(error);
     console.error("API: Unexpected error during registration:", error);
     return NextResponse.json(
-      { message: "Internal Server Error", error: error.message || "An unknown error occurred." },
+      { message: "Internal Server Error", error: errorMessage },
       { status: 500 }
     );
   } finally {

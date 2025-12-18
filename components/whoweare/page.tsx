@@ -1,5 +1,4 @@
 import React from 'react';
-import Image from 'next/image';
 import { Lightbulb, Briefcase, Globe, ShieldCheck, Handshake, Landmark } from 'lucide-react';
 
 const WhoWeAre = () => {
@@ -58,7 +57,7 @@ const WhoWeAre = () => {
               <div className="flex items-start text-zinc-700 dark:text-zinc-300">
                 <Landmark className="flex-shrink-0 mr-3 mt-1 h-6 w-6 text-blue-500" />
                 <span className="text-sm sm:text-base"> 
-                  Industrial Ventures: Engaging in local manufacturing and industrial projects that contribute to Ethiopia's economic and green mobility goals.
+                  Industrial Ventures: Engaging in local manufacturing and industrial projects that contribute to Ethiopia&apos; economic and green mobility goals.
                 </span>
               </div>
             </div>

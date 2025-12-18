@@ -3,6 +3,14 @@ import Image from 'next/image';
 import { Leaf, Handshake, Banknote, Car, Lightbulb, Factory as FactoryIcon, Globe, ArrowRight,Hotel} from 'lucide-react';
 import { Separator } from '@/components/ui/separator'; // Make sure this is imported
 import Link from 'next/link';
+import { ReactNode } from "react";
+
+interface ImpactCardProps {
+  icon: ReactNode; // anything that can be rendered (SVG, component, etc.)
+  title: string;
+  description: string;
+}
+
 const WhatsNew = () => {
   return (
     <section className="bg-white text-zinc-900 dark:bg-gray-950 dark:text-white py-16 sm:py-24">
@@ -176,7 +184,7 @@ const WhatsNew = () => {
 };
 
 /* Reusable Card Component */
-const ImpactCard = ({ icon, title, description }) => (
+const ImpactCard = ({ icon, title, description }: ImpactCardProps) => (
   <div className="p-4 bg-zinc-50 dark:bg-zinc-900 rounded-lg flex items-start gap-4">
     <div className="flex-shrink-0 mt-1">{icon}</div>
     <div>
@@ -186,4 +194,5 @@ const ImpactCard = ({ icon, title, description }) => (
   </div>
 );
 
+export { ImpactCard };
 export default WhatsNew;

@@ -27,19 +27,23 @@ import {
   MapPin,
   Briefcase,
   Building,
-  ArrowRight,
   CheckCircle,
   Circle,
   HardHat,
   CarTaxiFront,
-  Handshake,
-  Check,
-  ListChecks,
-  FileText
+  Handshake
 } from 'lucide-react';
 
-// --- Sidebar Onboarding Step Component ---
-function OnboardingStep({ icon, title, description, isActive }) {
+// --- NEW: Define the Prop Types for OnboardingStep ---
+interface OnboardingStepProps {
+  icon: React.ReactNode; 
+  title: string;
+  description: string;
+  isActive: boolean;
+}
+
+// --- Sidebar Onboarding Step Component (FIXED) ---
+function OnboardingStep({ icon, title, description, isActive }: OnboardingStepProps) {
   return (
     <div className="flex items-start space-x-4">
       <div className="flex-shrink-0 mt-1">{icon}</div>
@@ -52,7 +56,7 @@ function OnboardingStep({ icon, title, description, isActive }) {
 }
 
 // --- Wizard Progress Bar Component ---
-function WizardProgress({ activeStep, isLargeDevice }) {
+function WizardProgress({ activeStep, isLargeDevice }: { activeStep: number, isLargeDevice: boolean }) {
   const steps = [
     { name: "Personal & Business Details", icon: <User className="w-4 h-4" /> },
     { name: "Minibus & Service Details", icon: <CarTaxiFront className="w-4 h-4" /> },
@@ -167,7 +171,9 @@ export function Step1Form() {
       const hasEmail = values.emailAddress?.trim() !== '';
 
       if (hasPrimaryPhone) queryParams.append('primaryPhoneNumber', values.primaryPhoneNumber);
-      if (hasEmail) queryParams.append('emailAddress', values.emailAddress);
+
+      // FIX: Use non-null assertion (!) because 'hasEmail' check ensures it is not null/undefined/empty string.
+      if (hasEmail) queryParams.append('emailAddress', values.emailAddress!); 
 
       if (hasPrimaryPhone || hasEmail) {
         const response = await fetch(`/api/check-uniqueness?${queryParams.toString()}`);
@@ -264,7 +270,7 @@ export function Step1Form() {
           <div>
             <div className="mt-8 mb-8"> {/* Added mt-8 to push the content down */}
               <h1 className="text-3xl font-bold text-gray-900 mb-5">Welcome to <span className="text-blue-600"> Multiverse Minibus & Truck Registration</span>!</h1>
-              <h2 className="text-xl text-gray-600 mb-8">Let's get you registered quickly and easily!</h2>
+              <h2 className="text-xl text-gray-600 mb-8">Let&apos;s get you registered quickly and easily!</h2>
             </div>
             <div className="space-y-6">
               <OnboardingStep

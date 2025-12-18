@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import React, { useMemo, useRef } from "react";
 import * as THREE from "three";
+import { Mesh, ShaderMaterial as ThreeShaderMaterial, Vector3, Vector2 } from "three"; // Import specific Three.js types
 
 export const CanvasRevealEffect = ({
   animationSpeed = 0.4,
@@ -181,6 +182,7 @@ type Uniforms = {
     type: string;
   };
 };
+
 const ShaderMaterial = ({
   source,
   uniforms,
@@ -192,27 +194,32 @@ const ShaderMaterial = ({
   uniforms: Uniforms;
 }) => {
   const { size } = useThree();
-  const ref = useRef<THREE.Mesh>();
+  // FIX 3: Type ref as a reference to a Three.js Mesh
+  const ref = useRef<Mesh>(null!); 
   let lastFrameTime = 0;
 
   useFrame(({ clock }) => {
-    if (!ref.current) return;
+    // FIX 4: Explicitly type the material to avoid 'any'
+    if (!ref.current || !(ref.current.material instanceof ThreeShaderMaterial)) return; 
+    
     const timestamp = clock.getElapsedTime();
     if (timestamp - lastFrameTime < 1 / maxFps) {
       return;
     }
     lastFrameTime = timestamp;
 
-    const material: any = ref.current.material;
+    const material: ThreeShaderMaterial = ref.current.material;
     const timeLocation = material.uniforms.u_time;
+    // FIX 1: Access the value property of the uniform object
     timeLocation.value = timestamp;
   });
 
-  const getUniforms = () => {
-    const preparedUniforms: any = {};
+  const getUniforms = React.useCallback(() => {
+    // FIX 5: Explicitly type preparedUniforms and uniform variable to avoid 'any'
+    const preparedUniforms: { [key: string]: any } = {}; // Use any for intermediate mapping since structure is dynamic
 
     for (const uniformName in uniforms) {
-      const uniform: any = uniforms[uniformName];
+      const uniform = uniforms[uniformName];
 
       switch (uniform.type) {
         case "uniform1f":
@@ -220,7 +227,7 @@ const ShaderMaterial = ({
           break;
         case "uniform3f":
           preparedUniforms[uniformName] = {
-            value: new THREE.Vector3().fromArray(uniform.value),
+            value: new Vector3().fromArray(uniform.value as number[]), // Type casting for fromArray
             type: "3f",
           };
           break;
@@ -229,15 +236,16 @@ const ShaderMaterial = ({
           break;
         case "uniform3fv":
           preparedUniforms[uniformName] = {
-            value: uniform.value.map((v: number[]) =>
-              new THREE.Vector3().fromArray(v)
+            // FIX 2: Explicitly type the map callback parameter as number[]
+            value: (uniform.value as number[][]).map((v: number[]) => 
+              new Vector3().fromArray(v)
             ),
             type: "3fv",
           };
           break;
         case "uniform2f":
           preparedUniforms[uniformName] = {
-            value: new THREE.Vector2().fromArray(uniform.value),
+            value: new Vector2().fromArray(uniform.value as number[]), // Type casting for fromArray
             type: "2f",
           };
           break;
@@ -249,10 +257,10 @@ const ShaderMaterial = ({
 
     preparedUniforms["u_time"] = { value: 0, type: "1f" };
     preparedUniforms["u_resolution"] = {
-      value: new THREE.Vector2(size.width * 2, size.height * 2),
-    }; // Initialize u_resolution
+      value: new Vector2(size.width * 2, size.height * 2),
+    };
     return preparedUniforms;
-  };
+  }, [uniforms, size.width, size.height]); // FIX 6: Add all external dependencies to useMemo dependency array
 
   // Shader material
   const material = useMemo(() => {
@@ -271,7 +279,7 @@ const ShaderMaterial = ({
       }
       `,
       fragmentShader: source,
-      uniforms: getUniforms(),
+      uniforms: getUniforms(), // Now correctly inside the useMemo based on its dependencies
       glslVersion: THREE.GLSL3,
       blending: THREE.CustomBlending,
       blendSrc: THREE.SrcAlphaFactor,
@@ -279,10 +287,11 @@ const ShaderMaterial = ({
     });
 
     return materialObject;
-  }, [size.width, size.height, source]);
+  }, [source, getUniforms]); // Dependency updated to include getUniforms
 
   return (
-    <mesh ref={ref as any}>
+    // FIX 7: Remove 'as any' from ref
+    <mesh ref={ref}> 
       <planeGeometry args={[2, 2]} />
       <primitive object={material} attach="material" />
     </mesh>
@@ -298,11 +307,6 @@ const Shader: React.FC<ShaderProps> = ({ source, uniforms, maxFps = 60 }) => {
 };
 interface ShaderProps {
   source: string;
-  uniforms: {
-    [key: string]: {
-      value: number[] | number[][] | number;
-      type: string;
-    };
-  };
+  uniforms: Uniforms; // Use the defined Uniforms interface
   maxFps?: number;
 }

@@ -1,7 +1,7 @@
-// app/admin/applications/page.tsx
+// app/admin/applications/ApplicationsPageClient.tsx
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react"; 
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -16,7 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, PlusCircle, FileText, Search, Filter, Edit, Eye, Trash2 } from "lucide-react"; // Import Trash2 icon
+import { Loader2, PlusCircle, FileText, Search, Filter, Edit, Eye, Trash2 } from "lucide-react"; 
 import CustomLoader from "@/components/ui/custom-loader";
 import {
   Select,
@@ -25,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { // Import Shadcn UI AlertDialog components
+import { 
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -89,6 +89,10 @@ interface Application {
   updatedAt: string;
 }
 
+// Define the valid variant types for the Badge component
+type BadgeVariant = "default" | "destructive" | "secondary" | "outline";
+
+
 export default function AdminApplicationsPageClient() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -97,7 +101,7 @@ export default function AdminApplicationsPageClient() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isDeleting, setIsDeleting] = useState<string | null>(null); // State to track which application is being deleted
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
   const [searchTermInput, setSearchTermInput] = useState(searchParams.get('search') || '');
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
@@ -105,30 +109,11 @@ export default function AdminApplicationsPageClient() {
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'all');
 
   // Determine if the current user is a Main Admin
-  const isMainAdmin = session?.user?.role === "MAIN_ADMIN";
+ // 🛑 FIX APPLIED: Type assertion for session.user.role
+ const isMainAdmin = (session?.user as any)?.role === "MAIN_ADMIN";
 
-
-  useEffect(() => {
-    if (status === "loading") return;
-
-    if (!session?.user) {
-      router.push("/admin/login");
-      return;
-    }
-
-    const authorizedRoles = ['MAIN_ADMIN', 'REGISTRAR_ADMIN'];
-    if (!session.user.role || !authorizedRoles.includes(session.user.role)) {
-      toast.error("Access Denied", {
-        description: "You do not have permission to view applications.",
-      });
-      router.push("/admin/dashboard");
-      return;
-    }
-
-    fetchApplications();
-  }, [session, status, router, searchQuery, statusFilter]);
-
-  const fetchApplications = async () => {
+  // FIX 2: Wrap fetchApplications in useCallback to make it a stable dependency for useEffect
+  const fetchApplications = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
@@ -139,8 +124,8 @@ export default function AdminApplicationsPageClient() {
         params.set('status', statusFilter);
       }
 
-      router.replace(`?${params.toString()}`, { shallow: true });
-
+  // 🛑 FIX APPLIED: Removed unsupported { shallow: true } option
+router.replace(`?${params.toString()}`);
       const res = await fetch(`/api/admin/applications?${params.toString()}`);
       if (!res.ok) {
         const errorData = await res.json();
@@ -148,22 +133,47 @@ export default function AdminApplicationsPageClient() {
       }
       const data: Application[] = await res.json();
       setApplications(data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) { // FIX 3: Catch block uses 'unknown'
+      const message = err instanceof Error ? err.message : "Failed to fetch applications due to an unknown error.";
+      setError(message);
       toast.error("Error loading applications", {
-        description: err.message,
+        description: message,
         duration: 5000,
         richColors: true,
       });
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [searchQuery, statusFilter, router]); // Dependencies for useCallback
+
+  useEffect(() => {
+    if (status === "loading") return;
+
+    if (!session?.user) {
+      router.push("/admin/login");
+      return;
+    }
+
+    const authorizedRoles = ['MAIN_ADMIN', 'REGISTRAR_ADMIN'];
+ // 🛑 FIX APPLIED: Type assertion for session.user.role
+ if (!(session.user as any)?.role || !authorizedRoles.includes((session.user as any)?.role)) {
+      toast.error("Access Denied", {
+        description: "You do not have permission to view applications.",
+      });
+      router.push("/admin/dashboard");
+      return;
+    }
+
+    fetchApplications();
+  }, [session, status, router, fetchApplications]); // FIX 2: Added fetchApplications to dependency array
+
 
   const handleSearchClick = () => {
     setSearchQuery(searchTermInput);
   };
 
+  // NOTE: This helper function is now unused because the 'Applicant Reg. Status' column was removed.
+  /*
   const isApplicantRegistrationComplete = (applicant: ApplicantData | null | undefined): boolean => {
     if (!applicant) return false;
 
@@ -194,15 +204,17 @@ export default function AdminApplicationsPageClient() {
 
     return allRequiredPresent;
   };
+  */
 
-  const getApplicationStatusVariant = (status: Application["applicationStatus"]) => {
+  // 🛑 FIX APPLIED: Mapped custom status strings to valid BadgeVariant types
+  const getApplicationStatusVariant = (status: Application["applicationStatus"]): BadgeVariant => {
     switch (status) {
       case "NEW":
-        return "success";
+        return "secondary"; // Mapped 'success' to 'secondary'
       case "UNDER_REVIEW":
-        return "warning";
+        return "outline";   // Mapped 'warning' to 'outline'
       case "APPROVED":
-        return "info";
+        return "default";   // Mapped 'info' to 'default'
       case "REJECTED":
         return "destructive";
       default:
@@ -210,14 +222,15 @@ export default function AdminApplicationsPageClient() {
     }
   };
 
-  const getLoanStatusVariant = (status: Application["loanApplicationStatus"]) => {
+  // 🛑 FIX APPLIED: Mapped custom status strings to valid BadgeVariant types
+  const getLoanStatusVariant = (status: Application["loanApplicationStatus"]): BadgeVariant => {
     switch (status) {
       case "Pending":
-        return "default";
+        return "outline"; // Changed from default to outline for pending
       case "Approved":
-        return "success";
+        return "secondary"; // Mapped 'success' to 'secondary'
       case "Disbursed":
-        return "info";
+        return "default"; // Mapped 'info' to 'default'
       case "Denied":
         return "destructive";
       default:
@@ -225,13 +238,16 @@ export default function AdminApplicationsPageClient() {
     }
   };
 
+  // NOTE: This helper function is now unused because the 'Applicant Reg. Status' column was removed.
+  /*
   const getRegistrationStatusVariant = (isComplete: boolean) => {
-    return isComplete ? "success" : "destructive";
+    return isComplete ? "secondary" : "destructive"; // Mapped success to secondary
   };
+  */
 
   // New function to handle application deletion
   const handleDeleteApplication = async (applicationId: string) => {
-    setIsDeleting(applicationId); // Set state to indicate this application is being deleted
+    setIsDeleting(applicationId); 
     try {
       const res = await fetch(`/api/admin/applications/${applicationId}`, {
         method: "DELETE",
@@ -248,15 +264,16 @@ export default function AdminApplicationsPageClient() {
       toast.success("Application deleted successfully!", {
         description: `Application ID: ${applicationId.substring(0, 8)}... has been removed.`,
       });
-      fetchApplications(); // Re-fetch the list to update the UI
-    } catch (err: any) {
+      fetchApplications(); 
+    } catch (err: unknown) { // FIX 3: Catch block uses 'unknown'
+      const message = err instanceof Error ? err.message : "An unknown error occurred during deletion.";
       toast.error("Error deleting application", {
-        description: err.message,
+        description: message,
         duration: 5000,
         richColors: true,
       });
     } finally {
-      setIsDeleting(null); // Clear deleting state
+      setIsDeleting(null); 
     }
   };
 
@@ -284,7 +301,8 @@ export default function AdminApplicationsPageClient() {
           <FileText className="inline-block mr-3 text-indigo-600" />
           All Applications
         </h1>
-        {(session?.user?.role === 'MAIN_ADMIN' || session?.user?.role === 'REGISTRAR_ADMIN') && (
+        {/* 🛑 FIX APPLIED: Type assertion for session.user.role */}
+        {((session?.user as any)?.role === 'MAIN_ADMIN' || (session?.user as any)?.role === 'REGISTRAR_ADMIN') && (
           <Button onClick={() => router.push("/admin/applications/create")} className="bg-indigo-600 hover:bg-indigo-700">
             <PlusCircle className="mr-2 h-4 w-4" /> Create New Application
           </Button>
@@ -347,19 +365,19 @@ export default function AdminApplicationsPageClient() {
                 <TableHead className="w-[100px]">ID</TableHead>
                 <TableHead>Applicant Name</TableHead>
                 <TableHead>Phone Number</TableHead>
-                <TableHead>Applicant Reg. Status</TableHead>
+                {/* 1. REMOVED: <TableHead>Applicant Reg. Status</TableHead> */}
                 <TableHead>Application Status</TableHead>
                 <TableHead>Loan Status</TableHead>
                 <TableHead>Assigned To</TableHead>
                 <TableHead>Last Processed By</TableHead>
-                <TableHead>Registered By</TableHead>
+                {/* 2. REMOVED: <TableHead>Registered By</TableHead> */}
                 <TableHead>Created At</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {applications.map((app) => {
-                const isRegComplete = isApplicantRegistrationComplete(app.applicant);
+                // const isRegComplete = isApplicantRegistrationComplete(app.applicant); // No longer needed
                 return (
                   <TableRow key={app.id}>
                     <TableCell className="font-medium">
@@ -367,11 +385,13 @@ export default function AdminApplicationsPageClient() {
                     </TableCell>
                     <TableCell>{app.applicantFullName}</TableCell>
                     <TableCell>{app.primaryPhoneNumber}</TableCell>
+                    {/* 1. REMOVED:
                     <TableCell>
                       <Badge variant={getRegistrationStatusVariant(isRegComplete)}>
                         {isRegComplete ? "Complete" : "Incomplete"}
                       </Badge>
                     </TableCell>
+                    */}
                     <TableCell>
                       <Badge variant={getApplicationStatusVariant(app.applicationStatus)}>
                         {app.applicationStatus.replace(/_/g, " ")}
@@ -384,9 +404,11 @@ export default function AdminApplicationsPageClient() {
                     </TableCell>
                     <TableCell>{app.assignedTo?.fullName || "Unassigned"}</TableCell>
                     <TableCell>{app.processedBy?.fullName || "N/A"}</TableCell>
+                    {/* 2. REMOVED:
                     <TableCell>{app.applicant?.registeredBy?.fullName || "N/A"}</TableCell>
+                    */}
                     <TableCell>{new Date(app.createdAt).toLocaleDateString()}</TableCell>
-                    <TableCell className="text-right flex space-x-2 justify-end"> {/* Added flex and space-x-2 */}
+                    <TableCell className="text-right flex space-x-2 justify-end">
                       {/* View Button */}
                       <Button
                         variant="outline"
@@ -413,7 +435,7 @@ export default function AdminApplicationsPageClient() {
                             <Button
                               variant="destructive"
                               size="sm"
-                              disabled={isDeleting === app.id} // Disable if this specific app is being deleted
+                              disabled={isDeleting === app.id} 
                               className="flex items-center"
                             >
                               {isDeleting === app.id ? (

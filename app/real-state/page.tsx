@@ -1,17 +1,24 @@
-// src/app/am/real-estate-details/page.tsx
+// src/app/am/real-estate-details/page.tsx (or ./app/real-state/page.tsx, based on the error output)
 "use client";
 
 import React from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { Separator } from '@/components/ui/separator';
 import Footer from '@/components/footer/page';
 import Navbar from '@/components/Navbar/page';
-import { Truck, Home, Factory, MapPin, Building, Package, Award, Users, ShoppingBag, School, Tv, Globe, ArrowLeft } from 'lucide-react';
+import {  Home,  MapPin, Building, Users, ShoppingBag, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
+// ----------------------------------------------------
+// FIX 1: Define the props interface for type safety
+// ----------------------------------------------------
+interface AnimatedContentSectionProps {
+  children: React.ReactNode;
+  delay?: number;
+}
+
 // Reusable Content Section with animation
-const AnimatedContentSection = ({ children, delay = 0 }) => (
+const AnimatedContentSection = ({ children, delay = 0 }: AnimatedContentSectionProps) => (
   <motion.section
     initial={{ opacity: 0, y: 50 }}
     whileInView={{ opacity: 1, y: 0 }}
@@ -31,11 +38,13 @@ const RealEstateDetails = () => {
         
         {/* Back to Home Page button */}
         <div className="container mx-auto px-4 max-w-7xl">
-          <Link href="/" passHref>
-            <div className="inline-flex items-center text-blue-600 dark:text-blue-400 font-semibold mb-8 transition-colors duration-200 hover:text-blue-500">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Home
-            </div>
+          {/* FIX 2: Correct Link usage */}
+          <Link 
+            href="/" 
+            className="inline-flex items-center text-blue-600 dark:text-blue-400 font-semibold mb-8 transition-colors duration-200 hover:text-blue-500"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Home
           </Link>
         </div>
 
@@ -136,7 +145,7 @@ const RealEstateDetails = () => {
                     <Home size={24} /> Second Phase: Community-Centric Living
                   </h3>
                   <p className="text-base text-zinc-600 dark:text-zinc-400 mb-4">
-                    The second phase consists of 90 G+3 building units, strategically located in the center of the land's decline. These three apartment units will foster a vibrant community environment.
+                    The second phase consists of 90 G+3 building units, strategically located in the center of the land&apos; decline. These three apartment units will foster a vibrant community environment.
                   </p>
                   <ul className="list-disc list-inside space-y-2 text-zinc-700 dark:text-zinc-300">
                     <li>Each unit includes 4,000 m² of land for schools, mini-marts, and clinics.</li>
@@ -161,7 +170,7 @@ const RealEstateDetails = () => {
                     The final phase will comprise 105 building units, specifically designed for singles, newly married couples, and modern working families. A total of 3150 apartment units will be constructed.
                   </p>
                   <ul className="list-disc list-inside space-y-2 text-zinc-700 dark:text-zinc-300">
-                    <li>Includes entertainment facilities such as kids' bars and movie theaters.</li>
+                    <li>Includes entertainment facilities such as kids bars and movie theaters.</li>
                     <li>A beautiful green park will be constructed alongside a nearby stream to enhance aesthetic appeal.</li>
                   </ul>
                 </div>

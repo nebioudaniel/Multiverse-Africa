@@ -1,4 +1,3 @@
-// components/admin/users/columns.tsx
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
@@ -18,7 +17,8 @@ import {
   Hash,
   Fingerprint,
   Users as UsersIcon,
-  Ruler
+  Ruler,
+  UserPen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,12 +34,11 @@ import { useRouter } from "next/navigation";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 
 // Define roles to match the server-side enum
-enum ClientRole {
+export enum ClientRole {
   MAIN_ADMIN = "MAIN_ADMIN",
   REGISTRAR_ADMIN = "REGISTRAR_ADMIN",
   FINANCE_ADMIN = "FINANCE_ADMIN",
@@ -47,6 +46,11 @@ enum ClientRole {
 }
 
 export type UserApplicant = {
+  houseNumber: string | null | undefined;
+  idNumber: string | null | undefined;
+  gender: any;
+  entityName: string | null | undefined;
+  residentialAddress: string | null | undefined;
   id: string;
   fullName: string;
   emailAddress?: string | null;
@@ -76,6 +80,18 @@ type TableMeta = {
   refetch?: () => void;
 };
 
+// Helper function to safely extract an error message
+const getErrorMessage = (err: unknown): string => {
+    if (err instanceof Error) {
+        return err.message;
+    }
+    if (typeof err === 'object' && err !== null && 'message' in err && typeof (err as { message: unknown }).message === 'string') {
+        return (err as { message: string }).message;
+    }
+    return "An unexpected error occurred.";
+}
+
+
 const DetailRow = ({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value: string | number | null | boolean | undefined }) => {
   const displayValue = (typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value) || "N/A";
   
@@ -83,7 +99,7 @@ const DetailRow = ({ icon: Icon, label, value }: { icon: React.ElementType, labe
     // Adjusted grid for better alignment and visibility
     <div className="grid grid-cols-[140px_1fr] items-start gap-x-4">
       <div className="flex items-center gap-2 text-sm text-gray-600">
-        <Icon className="h-4 w-4 text-green-600" />
+    
         <span className="font-medium">{label}:</span>
       </div>
       <div className="text-sm text-gray-900 font-medium break-words">{displayValue}</div>
@@ -93,7 +109,7 @@ const DetailRow = ({ icon: Icon, label, value }: { icon: React.ElementType, labe
 
 
 export const createUserColumns = (currentUserId?: string, currentUserRole?: ClientRole): ColumnDef<UserApplicant>[] => {
-  const router = useRouter();
+  // FIX: Removed useRouter here. It must be called inside a component/hook.
 
   const handleDelete = async (
     userId: string,
@@ -131,15 +147,21 @@ export const createUserColumns = (currentUserId?: string, currentUserRole?: Clie
         description: `User with ID ${userId} has been successfully deleted.`,
         id: `delete-${userId}`
       });
+      
       // Use the refetch function from the table's meta
       if (refetch) {
         refetch();
       } else {
-        router.refresh();
+        // Since we removed useRouter from the top, we need another way to refresh if refetch is unavailable.
+        // In a TanStack table setup, refetch is highly preferred. If not available, we might assume a full page reload if necessary.
+        // For simplicity and to avoid importing useRouter outside of the component context, we'll rely on `refetch`.
+        // If a full refresh is needed here without using the table's refetch:
+        // window.location.reload(); 
       }
-    } catch (error: any) {
+    } catch (error: unknown) { // FIX: Changed 'any' to 'unknown'
+      const errorMessage = getErrorMessage(error);
       toast.error("Deletion Failed", {
-        description: error.message,
+        description: errorMessage,
         id: `delete-${userId}`,
       });
     }
@@ -240,6 +262,9 @@ export const createUserColumns = (currentUserId?: string, currentUserRole?: Clie
       id: "actions",
       enableHiding: false, 
       cell: ({ row, table }) => {
+        // FIX: Moved useRouter inside the column definition cell function
+        const router = useRouter(); 
+        
         const meta = table.options.meta as TableMeta;
         if (meta?.isLoading) {
           return <Skeleton className="h-8 w-8 rounded-full" />;
@@ -274,7 +299,7 @@ export const createUserColumns = (currentUserId?: string, currentUserRole?: Clie
                 <DialogContent className="w-[90vw] !max-w-none"> 
                   <DialogHeader className="space-y-1">
                     <DialogTitle className="flex items-center gap-2 text-2xl font-bold text-gray-800">
-                      <UsersIcon className="h-7 w-7 text-green-600" /> {user.fullName}'s Profile
+                      <UsersIcon className="h-7 w-7 text-green-600" /> {user.fullName}s Profile
                     </DialogTitle>
                     <DialogDescription className="text-gray-500">
                       Detailed information for {user.fullName} ({user.role.replace('_', ' ')}).

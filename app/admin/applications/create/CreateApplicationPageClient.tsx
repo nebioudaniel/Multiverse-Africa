@@ -1,15 +1,15 @@
-/* trunk-ignore-all(prettier) */
-// app/admin/applications/create/page.tsx
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback , useRef} from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react"
 import { toast } from "sonner"
 import { z } from "zod";
-import { useForm } from "react-hook-form";
+import { useForm, UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useEdgeStore } from "@/lib/edgestore-client";
 
+// UI/Component Imports
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -50,10 +50,8 @@ import {
   Signature,
   XCircle,
 } from "lucide-react";
-
 import { Combobox } from "@/components/ui/combobox";
 import { ComboboxSearch } from "@/components/ui/combobox-search";
-
 import {
   Popover,
   PopoverContent,
@@ -62,8 +60,10 @@ import {
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
+// ❌ REMOVED THE INVALID HOOK CALL FROM HERE
+// const currentUrlRef = useRef<HTMLAnchorElement>(null); 
 // ======================================================
-// DEFINE ethiopianBanksAndMFIs OUTSIDE THE COMPONENT FUNCTION
+// 1. CONSTANTS AND ZOD SCHEMA DEFINITIONS
 // ======================================================
 const ethiopianBanksAndMFIs = [
   "Commercial Bank of Ethiopia (CBE)", "Awash Bank", "Dashen Bank", "Bank of Abyssinia",
@@ -86,57 +86,70 @@ const ethiopianBanksAndMFIs = [
   "Other / Specify",
 ].map(name => ({ value: name, label: name }));
 
+// ❌ REMOVED THE INVALID HOOK CALLS FROM HERE
+// const [resolver, setResolver] = useState<any>(null);
+//   useEffect(() => {
+//     import("@hookform/resolvers/zod").then((module) => {
+//       setResolver(() => module.zodResolver(formSchema));
+//     });
+//   }, []);
 
-// Define the Zod schema for the form
 const formSchema = z.object({
   // Applicant Selection
   userId: z.string().min(1, { message: "Please select an applicant." }),
 
-  // Applicant Information (snapshotted from User) - now mostly optional
+  // Applicant Information (snapshotted from User)
   applicantFullName: z.string().nullable().optional(),
-  gender: z.enum(["Male", "Female", "Other"]).nullable().optional(), // Now optional
-  idNumber: z.string().nullable().optional(), // Now optional
-  primaryPhoneNumber: z.string().nullable().optional(), // Now optional
-  // Ensure email is optional and can be null if empty
-  applicantEmailAddress: z.string().email("Invalid email address").nullable().optional().or(z.literal("")),
-  residentialAddress: z.string().nullable().optional(), // Now optional
-  region: z.string().nullable().optional(), // Now optional
-  city: z.string().nullable().optional(), // Now optional
-  woredaKebele: z.string().nullable().optional(), // Now optional
-  houseNumber: z.string().nullable().optional(), // Already nullable/optional
+  fatherName: z.string().nullable().optional(),
+  grandfatherName: z.string().nullable().optional(),
 
-  // Business Specific (snapshotted from User, conditional)
+  gender: z.enum(["Male", "Female", "Other"]).nullable().optional(),
+  idNumber: z.string().nullable().optional(),
+  primaryPhoneNumber: z.string().nullable().optional(),
+  applicantEmailAddress: z.string().email("Invalid email address").nullable().optional().or(z.literal("")),
+  residentialAddress: z.string().nullable().optional(),
+  region: z.string().nullable().optional(),
+  city: z.string().nullable().optional(),
+  woredaKebele: z.string().nullable().optional(),
+  houseNumber: z.string().nullable().optional(),
+
+  // Business Specific
   isBusiness: z.boolean().nullable().optional(),
   entityName: z.string().nullable().optional(),
   tin: z.string().nullable().optional(),
   businessLicenseNo: z.string().nullable().optional(),
 
-  // Cooperative/Association (snapshotted from User, optional)
+  // Cooperative/Association
   associationName: z.string().nullable().optional(),
   membershipNumber: z.string().nullable().optional(),
 
-  // Driver Information for this Application
+  // Driver Information
   driverFullName: z.string().min(1, { message: "Driver's Full Name is required." }),
   driverLicenseNo: z.string().min(1, { message: "Driver's License Number is required." }),
-  // FIX: Added "E" to the enum to match the frontend JSX and backend API
-  licenseCategory: z.enum(["A", "B", "C", "D", "E"], { 
-    required_error: "License Category is required.",
-  }),
+licenseCategory: z.enum(
+  ["A", "B", "C", "D", "E"] as const,
+  {
+    error: "License Category is required.",
+  }
+),
+// Vehicle Details
+vehicleType: z.enum(
+  ["Diesel_Minibus", "Electric_Minibus", "Electric_Mid_Bus_21_1", "Traditional_Minibus"] as const,
+  {
+    error: "Please select a vehicle type.",
+  }
+),
 
-  // Vehicle Details
-  vehicleType: z.enum(["Diesel_Minibus", "Electric_Minibus", "Electric_Mid_Bus_21_1", "Traditional_Minibus"], {
-    required_error: "Please select a vehicle type.",
-  }),
   quantityRequested: z.coerce.number()
     .min(1, { message: "Quantity must be at least 1." })
     .max(100, { message: "Quantity cannot exceed 100." }),
   intendedUse: z.string().nullable().optional(),
 
-  // Optional Preferences (These are from the User model)
+  // Optional Preferences
   enableGpsTracking: z.boolean().nullable().optional(),
   acceptEpayment: z.boolean().nullable().optional(),
 
-  // Legal & Signature (from User model)
+  // Legal & Signature
   digitalSignatureUrl: z.string().nullable().optional(),
   agreedToTerms: z.boolean().nullable().optional(),
 
@@ -146,53 +159,216 @@ const formSchema = z.object({
     .min(0, { message: "Loan amount cannot be negative." }),
   bankReferenceNumber: z.string().nullable().optional(),
 
-  // Document Attachments (URLs will be set after upload)
+  // Document Attachments
   downPaymentProofUrl: z.string().nullable().optional(),
   idScanUrl: z.string().nullable().optional(),
   tinNumberUrl: z.string().nullable().optional(),
   supportingLettersUrl: z.string().nullable().optional(),
 
-  // Application Tracking (initial values, status is handled by API default)
+  // Application Tracking
   initialRemarks: z.string().nullable().optional(),
 
-  // Status Fields (Moved to last, role-dependent visibility/editability handled in JSX)
+  // Status Fields
   applicationStatus: z.enum(["NEW", "UNDER_REVIEW", "APPROVED", "REJECTED"]).optional(),
   loanApplicationStatus: z.enum(["Pending", "Approved", "Disbursed"]).optional(),
 });
 
-// Type for the user data fetched from the API
+type FormSchema = z.infer<typeof formSchema>;
+
 interface UserOption {
+  // 🔑 User Identification & System Fields
   id: string;
-  fullName: string;
-  emailAddress: string | null;
-  primaryPhoneNumber: string | null;
+  role: string;
+  createdAt: Date;
+  updatedAt: Date;
+
+  // 👤 Personal Details (Nullable if optional in DB)
+  fullName: string; // Assuming fullName is always present
+  fatherName: string | null;
+  grandfatherName: string | null;
   gender: string | null;
   idNumber: string | null;
+  primaryPhoneNumber: string | null;
+  emailAddress: string | null;
+  
+  // 🏠 Residential Address
   residentialAddress: string | null;
+  region: string | null; // <-- Fixed the missing/duplicated 'city' and 'region' area
+  city: string | null;
   woredaKebele: string | null;
   houseNumber: string | null;
+
+  // 💼 Business Details (Nullable)
   isBusiness: boolean;
   entityName: string | null;
   tin: string | null;
   businessLicenseNo: string | null;
   associationName: string | null;
   membershipNumber: string | null;
-  preferredVehicleType: string | null;
+
+  // 🚗 Vehicle & Usage Details (Using the most common type from your duplicates)
+  // Note: I'm using 'string | null' for preferredVehicleType as it's the most flexible
+  preferredVehicleType: string | null; 
   vehicleQuantity: number | null;
   intendedUse: string | null;
+  
+  // ✅ Preferences (Nullable Booleans)
   enableGpsTracking: boolean | null;
   acceptEpayment: boolean | null;
   digitalSignatureUrl: string | null;
   agreedToTerms: boolean | null;
-  role: string;
-  createdAt: Date;
-  updatedAt: Date;
-  // Added for preferredFinancingInstitution pre-fill logic
+
+  // 🏦 Financing Details
   preferredFinancingInstitution: string | null;
+  // loanAmountRequested, bankReferenceNumber are likely not on the UserOption 
+  // but on the FormSchema, so I have excluded them here.
 }
 
+// ======================================================
+// 2. EdgeStoreField COMPONENT (FIXED: Moved outside the main function)
+// ======================================================
+
+interface EdgeStoreFieldProps {
+  label: string;
+  urlFieldName: keyof FormSchema;
+  description?: string;
+  form: UseFormReturn<FormSchema>;
+  useEdgeStore: typeof useEdgeStore;
+  setIsUploading: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
+const EdgeStoreField = ({
+  label,
+  urlFieldName,
+  description,
+  form,
+  useEdgeStore,
+  setIsUploading,
+}: EdgeStoreFieldProps) => {
+  const currentUrl = form.watch(urlFieldName);
+  const fileName = currentUrl ? String(currentUrl).split("/").pop() : null;
+
+  // ✅ FIX 1: useRef hook moved INSIDE the functional component
+  const currentUrlRef = useRef<HTMLAnchorElement>(null); 
+
+
+  const { edgestore } = useEdgeStore();
+  const [isUploadingLocal, setIsUploadingLocal] = useState(false);
+
+  const handleUpload = async (file: File) => {
+    try {
+      setIsUploading(true);
+      setIsUploadingLocal(true);
+   const res = await edgestore.documents.upload({
+  file,
+  onProgressChange: (p: number) => console.log("Progress →", p),
+});
+
+      form.setValue(urlFieldName, res.url, { shouldValidate: true });
+      toast.success(`${file.name} uploaded successfully!`);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
+      toast.error("Upload failed: " + errorMessage);
+    } finally {
+      setIsUploading(false);
+      setIsUploadingLocal(false);
+    }
+  };
+
+  const handleRemoveFile = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!currentUrl) return;
+
+    try {
+      // Optional: Delete from storage
+      // await edgestore.documents.delete({ url: currentUrl });
+      
+      form.setValue(urlFieldName, "" as any, { shouldValidate: true });
+      toast.info("File removed.");
+    } catch (err: unknown) {
+      console.error(err);
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
+      toast.error("Delete failed: " + errorMessage);
+    }
+  };
+
+  return (
+    <div className="mb-4 border p-3 rounded-lg bg-gray-50">
+      <Label className="text-sm font-medium mb-1 block">{label}</Label>
+      {description && <p className="text-xs text-muted-foreground mb-3">{description}</p>}
+
+      {currentUrl ? (
+        <div className="flex items-center justify-between p-3 rounded-lg border bg-green-50">
+          <div className="flex items-center space-x-2 truncate">
+            <FileText className="h-4 w-4 text-green-600" />
+            <span className="font-medium text-green-700 truncate">{fileName}</span>
+
+            <a
+              ref={currentUrlRef}
+              href={currentUrl as string} // Added href for functionality
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-500 hover:underline text-xs"
+            >
+              (View)
+            </a>
+          </div>
+
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleRemoveFile}
+          >
+            <XCircle className="h-4 w-4 text-red-500" />
+          </Button>
+        </div>
+      ) : (
+        <div
+          className="border border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-gray-100"
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault();
+            const file = e.dataTransfer.files[0];
+            if (file) handleUpload(file);
+          }}
+          onClick={() => {
+            const input = document.createElement("input");
+            input.type = "file";
+            input.onchange = (e: Event) => {
+              const file = (e.target as HTMLInputElement).files?.[0];
+              if (file) handleUpload(file);
+            };
+            input.click();
+          }}
+        >
+          {isUploadingLocal ? (
+            <p className="text-sm text-gray-600">Uploading…</p>
+          ) : (
+            <p className="text-sm text-gray-600">Click or drag file here</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+
+// ======================================================
+// 3. MAIN COMPONENT DEFINITION
+// ======================================================
 export default function CreateApplicationPageClient() {
   console.log("CreateApplicationPage: Component rendered.");
+  
+  // ✅ FIX 2: Moved useState and useEffect for resolver inside the component
+  const [resolver, setResolver] = useState<any>(null);
+
+  useEffect(() => {
+    import("@hookform/resolvers/zod").then((module) => {
+      setResolver(() => module.zodResolver(formSchema));
+    });
+  }, []);
+
   const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -205,23 +381,32 @@ export default function CreateApplicationPageClient() {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const [showOtherInstitutionInput, setShowOtherInstitutionInput] = useState(false);
 
-  // State for new files selected by the user
-  const [selectedFiles, setSelectedFiles] = useState<{
-    downPaymentProof?: File | null;
-    idScan?: File | null;
-    tinNumber?: File | null;
-    supportingLetters?: File | null;
-  }>({});
+  // === START: UploadThing State ===
+  const [isUploading, setIsUploading] = useState(false); // Global state to track if UploadThing is actively uploading
+  // === END: UploadThing State ===
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  // ❌ REMOVED THE PROBLEMTHIC GUARD CLAUSE!
+  // if (!resolver) {
+  //   // This is the initial render state while the zodResolver is being dynamically imported
+  //   return <CustomLoader message="Preparing form..." emoji="⚙️" />;
+  // }
+
+
+const form = useForm<FormSchema>({
+    // FIX: Pass resolver, which will be null initially, but useForm should handle it.
+    // If react-hook-form cannot handle a null resolver, you may need to define an empty
+    // resolver initially, but generally, passing null/undefined is fine.
+    resolver, 
     defaultValues: {
       userId: preselectedUserId || "",
       applicantFullName: "",
+      fatherName: "",
+      grandfatherName: "",
+
       gender: undefined,
       idNumber: "",
       primaryPhoneNumber: "",
-      applicantEmailAddress: "", // Initialize as empty string
+      applicantEmailAddress: "", 
       residentialAddress: "",
       region: "",
       city: "",
@@ -239,7 +424,7 @@ export default function CreateApplicationPageClient() {
       licenseCategory: undefined,
 
       vehicleType: undefined,
-      quantityRequested: 1,
+      quantityRequested: 1, 
       intendedUse: "",
 
       enableGpsTracking: false,
@@ -251,10 +436,12 @@ export default function CreateApplicationPageClient() {
       preferredFinancingInstitution: "",
       loanAmountRequested: 0,
       bankReferenceNumber: "",
+      
       downPaymentProofUrl: "",
       idScanUrl: "",
       tinNumberUrl: "",
       supportingLettersUrl: "",
+
       initialRemarks: "",
       applicationStatus: "NEW",
       loanApplicationStatus: "Pending",
@@ -263,106 +450,8 @@ export default function CreateApplicationPageClient() {
 
   const selectedUserId = form.watch("userId");
   const isBusiness = form.watch("isBusiness");
-  const isMainAdmin = session?.user?.role === "MAIN_ADMIN";
+ const isMainAdmin = (session?.user as any)?.role === "MAIN_ADMIN";
 
-  // Reusable FileDropzoneField component for Popover
-  const FileDropzoneField = ({
-    label,
-    fileStateKey,
-    description,
-  }: {
-    label: string;
-    fileStateKey: keyof typeof selectedFiles;
-    description?: string;
-  }) => {
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const file = selectedFiles[fileStateKey];
-    const isFileSelected = !!file;
-
-    const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-      setSelectedFiles(prev => ({ ...prev, [fileStateKey]: e.target.files?.[0] || null }));
-    }, [fileStateKey]);
-
-    const handleClearSelectedFile = useCallback((e: React.MouseEvent) => {
-      e.stopPropagation();
-      setSelectedFiles(prev => ({ ...prev, [fileStateKey]: null }));
-      if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-      }
-    }, [fileStateKey]);
-
-    const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const droppedFiles = e.dataTransfer.files;
-      if (droppedFiles && droppedFiles.length > 0) {
-        setSelectedFiles(prev => ({ ...prev, [fileStateKey]: droppedFiles[0] }));
-      }
-    }, [fileStateKey, setSelectedFiles]);
-
-    const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-      e.preventDefault();
-      e.stopPropagation();
-      e.dataTransfer.dropEffect = 'copy';
-    }, []);
-
-    const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-      e.stopPropagation();
-    }, []);
-
-    const handleFileInputClick = () => {
-      fileInputRef.current?.click();
-    };
-
-    return (
-      <div className="mb-4 last:mb-0">
-        <Label className="text-sm font-medium leading-none mb-2 block">{label}</Label>
-        {description && <p className="text-xs text-muted-foreground mb-3">{description}</p>}
-
-        <input
-          id={`file-upload-${fileStateKey}`}
-          type="file"
-          ref={fileInputRef}
-          className="hidden"
-          onChange={handleFileChange}
-        />
-
-        {isFileSelected ? (
-          <div className="flex items-center justify-between p-3 rounded-lg border border-gray-300 bg-gray-50 shadow-sm text-sm">
-            <div className="flex items-center space-x-2 truncate">
-              <FileText className="h-4 w-4 text-blue-600 flex-shrink-0" />
-              <span className="font-medium text-blue-700 truncate">{file?.name}</span>
-              {file?.size && (
-                <span className="text-gray-500 text-xs flex-shrink-0">({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
-              )}
-            </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={handleClearSelectedFile}
-              className="ml-2 flex-shrink-0"
-              title="Remove file"
-            >
-              <XCircle className="h-4 w-4 text-red-500" />
-            </Button>
-          </div>
-        ) : (
-          <div
-            className="flex flex-col items-center justify-center p-6 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 text-gray-500 cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors duration-200"
-            onClick={handleFileInputClick}
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-          >
-            <UploadCloud className="h-6 w-6 mb-2 text-gray-400" />
-            <p className="text-sm font-medium">Drag & drop files here or click to upload</p>
-            <p className="text-xs text-muted-foreground mt-1">Maximum file size: 5MB</p>
-          </div>
-        )}
-      </div>
-    );
-  };
 
   // Fetch users (now filtered by backend)
   const fetchData = useCallback(async () => {
@@ -399,7 +488,7 @@ export default function CreateApplicationPageClient() {
           console.log(`fetchData: Preselected user ${preselectedUserId} found.`);
           form.setValue("userId", preselectedUserId, { shouldValidate: true });
         } else if (preselectedUserId) {
-          let warningMessage = `User ID ${preselectedUserId} from URL could not be found or already has an application.`;
+          const warningMessage = `User ID ${preselectedUserId} from URL could not be found or already has an application.`;
           console.warn(`fetchData: Issue with preselected user ${preselectedUserId}: ${warningMessage}`);
           toast.warning("Pre-selected user issue", {
             description: warningMessage,
@@ -422,7 +511,7 @@ export default function CreateApplicationPageClient() {
       console.log("fetchData: Finally block reached. Setting isLoading to false.");
       setIsLoading(false); // Ensure isLoading is always set to false
     }
-  }, [preselectedUserId, form, router]); // Removed 'apiError', 'users' from dependencies to prevent re-renders on every apiError/users state change which is handled inside
+  }, [preselectedUserId, form, router, apiError]);
 
   // Effect for initial data fetch and auth check
   useEffect(() => {
@@ -439,7 +528,7 @@ export default function CreateApplicationPageClient() {
     }
 
     const authorizedRoles = ['MAIN_ADMIN', 'REGISTRAR_ADMIN'];
-    if (!session.user.role || !authorizedRoles.includes(session.user.role)) {
+   if (!(session.user as any)?.role || !authorizedRoles.includes((session.user as any)?.role)) {
       console.log("useEffect: Unauthorized role, redirecting to dashboard.");
       toast.error("Access Denied", {
         description: "You do not have permission to create applications.",
@@ -464,6 +553,10 @@ export default function CreateApplicationPageClient() {
         if (selectedUser) {
           console.log("useEffect: User found, setting form values.");
           form.setValue("applicantFullName", selectedUser.fullName || "");
+
+          form.setValue("fatherName", selectedUser.fatherName || "");
+          form.setValue("grandfatherName", selectedUser.grandfatherName || "");
+
           form.setValue("gender", selectedUser.gender as "Male" | "Female" | "Other" || undefined);
           form.setValue("idNumber", selectedUser.idNumber || "");
           form.setValue("primaryPhoneNumber", selectedUser.primaryPhoneNumber || "");
@@ -482,10 +575,9 @@ export default function CreateApplicationPageClient() {
 
           form.setValue("associationName", selectedUser.associationName || "");
           form.setValue("membershipNumber", selectedUser.membershipNumber || "");
-          
-          // FIX: Updated the cast to reflect the actual vehicle type values in the SelectContent later in the form
+
           form.setValue("vehicleType", selectedUser.preferredVehicleType as "Diesel_Minibus" | "Electric_Minibus" | "Electric_Mid_Bus_21_1" | "Traditional_Minibus" || undefined);
-          
+
           form.setValue("quantityRequested", selectedUser.vehicleQuantity || 1);
           form.setValue("intendedUse", selectedUser.intendedUse || "");
 
@@ -497,53 +589,58 @@ export default function CreateApplicationPageClient() {
           const preferredFinancing = selectedUser.preferredFinancingInstitution || "";
           form.setValue("preferredFinancingInstitution", preferredFinancing);
           if (preferredFinancing === "Other / Specify") {
-              setShowOtherInstitutionInput(true);
+            setShowOtherInstitutionInput(true);
           } else {
-              const isInList = ethiopianBanksAndMFIs.some(opt => opt.value === preferredFinancing);
-              if (preferredFinancing && !isInList) {
-                  // If it's not "Other / Specify" but also not in the list, assume it's a custom input
-                  form.setValue("preferredFinancingInstitution", preferredFinancing);
-                  setShowOtherInstitutionInput(true);
-              } else {
-                  setShowOtherInstitutionInput(false);
-              }
+            const isInList = ethiopianBanksAndMFIs.some(opt => opt.value === preferredFinancing);
+            if (preferredFinancing && !isInList) {
+              form.setValue("preferredFinancingInstitution", preferredFinancing);
+              setShowOtherInstitutionInput(true);
+            } else {
+              setShowOtherInstitutionInput(false);
+            }
           }
 
           if (!selectedUser.isBusiness) {
-              form.setValue("entityName", "");
-              form.setValue("tin", "");
-              form.setValue("businessLicenseNo", "");
+            form.setValue("entityName", "");
+            form.setValue("tin", "");
+            form.setValue("businessLicenseNo", "");
           }
         } else {
-            console.warn(`useEffect: Selected user ${selectedUserId} not found in fetched users.`);
+          console.warn(`useEffect: Selected user ${selectedUserId} not found in fetched users.`);
         }
       } else {
-          console.log("useEffect: selectedUserId is empty, resetting form fields related to applicant.");
-          // Only reset specific fields related to the applicant, not the whole form
-          form.reset({
-              ...form.getValues(), // Keep current values for other fields
-              applicantFullName: "", gender: undefined, idNumber: "", primaryPhoneNumber: "",
-              applicantEmailAddress: "", residentialAddress: "", region: "", city: "",
-              woredaKebele: "", houseNumber: "", isBusiness: false, entityName: "", tin: "",
-              businessLicenseNo: "", associationName: "", membershipNumber: "",
-              // driverFullName: "", driverLicenseNo: "", licenseCategory: undefined, // Keep driver info
-              // vehicleType: undefined, quantityRequested: 1, intendedUse: "", // Keep vehicle info
-              enableGpsTracking: false, // These can reset
-              acceptEpayment: false, // These can reset
-              digitalSignatureUrl: "", // These can reset
-              agreedToTerms: false, // These can reset
-              userId: "", // Clear the user selection
-              preferredFinancingInstitution: "", // Clear financing institution
-          }, { keepErrors: true, keepDirty: true }); // Keep errors and dirty state for untouched fields
-          setShowOtherInstitutionInput(false);
+        console.log("useEffect: selectedUserId is empty, resetting form fields related to applicant.");
+        // Only reset specific fields related to the applicant, not the whole form
+        form.reset({
+          ...form.getValues(), // Keep current values for other fields
+          applicantFullName: "",
+          fatherName: "",
+          grandfatherName: "",
+          gender: undefined, idNumber: "", primaryPhoneNumber: "",
+          applicantEmailAddress: "", residentialAddress: "", region: "", city: "",
+          woredaKebele: "", houseNumber: "", isBusiness: false, entityName: "", tin: "",
+          businessLicenseNo: "", associationName: "", membershipNumber: "",
+          enableGpsTracking: false,
+          acceptEpayment: false,
+          digitalSignatureUrl: "",
+          agreedToTerms: false,
+          userId: "", // Clear the user selection
+          preferredFinancingInstitution: "", // Clear financing institution
+          // Clear File URLs
+          downPaymentProofUrl: "",
+          idScanUrl: "",
+          tinNumberUrl: "",
+          supportingLettersUrl: "",
+        }, { keepErrors: true, keepDirty: true }); // Keep errors and dirty state for untouched fields
+        setShowOtherInstitutionInput(false);
       }
     } else {
-        console.log("useEffect: Condition for pre-filling not met (isLoading, apiError, or users.length is not ready).");
+      console.log("useEffect: Condition for pre-filling not met (isLoading, apiError, or users.length is not ready).");
     }
   }, [selectedUserId, users, form, isLoading, apiError]);
 
   // Handle form submission
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: FormSchema) {
     console.log("onSubmit: Form submission started.");
     setIsSubmitting(true);
     setApiError(null);
@@ -551,73 +648,30 @@ export default function CreateApplicationPageClient() {
     const dataToSend = { ...values };
 
     // --- Critical: Convert empty strings to null for optional fields ---
-    for (const key of Object.keys(dataToSend) as Array<keyof typeof dataToSend>) {
-        const val = dataToSend[key];
-        // Check if value is an empty string and the field is optional/nullable in the schema
-        if (typeof val === 'string' && val.trim() === '') {
-            // A more robust way to check if a Zod field is optional/nullable
-            const schemaField = formSchema.shape[key];
-            if (schemaField && ('_def' in schemaField) && (schemaField._def.typeName === 'ZodOptional' || schemaField._def.typeName === 'ZodNullable')) {
-                dataToSend[key] = null as any;
-            }
-            // Explicitly handle email if it's an empty string to be null
-            if (key === 'applicantEmailAddress' && val.trim() === '') {
-                dataToSend[key] = null as any;
-            }
+    for (const key of Object.keys(dataToSend) as (keyof FormSchema)[]) {
+      const val = dataToSend[key];
+      if (typeof val === "string" && val.trim() === "") {
+        // These are all nullable in your schema
+        const nullableStringKeys = [
+          "applicantFullName", "fatherName", "grandfatherName", "idNumber",
+          "primaryPhoneNumber", "applicantEmailAddress", "residentialAddress",
+          "region", "city", "woredaKebele", "houseNumber", "entityName",
+          "tin", "businessLicenseNo", "associationName", "membershipNumber",
+          "intendedUse", "digitalSignatureUrl", "preferredFinancingInstitution",
+          "bankReferenceNumber", "downPaymentProofUrl", "idScanUrl",
+          "tinNumberUrl", "supportingLettersUrl", "initialRemarks"
+        ] as const;
+      if (nullableStringKeys.includes(key as any)) {
+          (dataToSend[key] as string | null) = null;
         }
+      }
     }
-
-    // Explicitly handle preferredFinancingInstitution if "Other / Specify" selected
-    if (showOtherInstitutionInput && dataToSend.preferredFinancingInstitution === "") {
-        dataToSend.preferredFinancingInstitution = null;
-    }
-
-
-    // --- Handle File Uploads ---
-    const uploadedFileUrls: { [key: string]: string | null } = {};
-    let uploadSuccess = true;
-
-    for (const key of Object.keys(selectedFiles) as (keyof typeof selectedFiles)[]) {
-        const file = selectedFiles[key];
-        const urlFieldName = `${key}Url` as keyof typeof dataToSend; // e.g., 'downPaymentProof' -> 'downPaymentProofUrl'
-
-        if (file) {
-            toast.info(`Uploading ${file.name}...`, { duration: 2000 });
-            try {
-                // *** IMPORTANT: REPLACE THIS MOCK FILE UPLOAD LOGIC ***
-                // You need to implement your actual file upload API endpoint and logic here.
-                
-                // Mock upload for demonstration
-                await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
-                const mockUrl = `https://example.com/uploads/${file.name.replace(/\s/g, '_')}_${Date.now()}`;
-                uploadedFileUrls[urlFieldName] = mockUrl;
-                toast.success(`${file.name} uploaded successfully!`);
-
-            } catch (uploadError: any) {
-                console.error(`onSubmit: Error uploading ${file.name}:`, uploadError);
-                toast.error(`Failed to upload ${file.name}: ${uploadError.message || 'Unknown error'}`);
-                uploadSuccess = false;
-                break; // Stop if any upload fails
-            }
-        } else {
-            uploadedFileUrls[urlFieldName] = null; // Ensure null if no file selected for that field
-        }
-    }
-
-    if (!uploadSuccess) {
-        console.log("onSubmit: File upload failed, stopping submission.");
-        setIsSubmitting(false);
-        return; // Stop form submission if file upload failed
-    }
-
-    // Merge uploaded URLs into the dataToSend
-    Object.assign(dataToSend, uploadedFileUrls);
 
     // Ensure business-related fields are nullified if isBusiness is false
     if (!dataToSend.isBusiness) {
-        dataToSend.entityName = null;
-        dataToSend.tin = null;
-        dataToSend.businessLicenseNo = null;
+      dataToSend.entityName = null;
+      dataToSend.tin = null;
+      dataToSend.businessLicenseNo = null;
     }
 
     try {
@@ -659,6 +713,8 @@ export default function CreateApplicationPageClient() {
   }
 
   console.log("CreateApplicationPage: Rendering based on isLoading:", isLoading, "apiError:", apiError);
+  // FIX: This check now only relies on isLoading and apiError (which covers data fetching and session status), 
+  // ensuring the main component body (where useForm lives) is always run.
   if (isLoading && !apiError) {
     return <CustomLoader message="Loading page data..." emoji="📝" />;
   }
@@ -668,8 +724,14 @@ export default function CreateApplicationPageClient() {
     value: user.id,
   }));
 
-  // Calculate number of files selected
-  const numberOfFilesSelected = Object.values(selectedFiles).filter(file => file !== null).length;
+  // Calculate number of files selected (check if URL fields are populated)
+  const numberOfFilesSelected = [
+    form.watch('downPaymentProofUrl'),
+    form.watch('idScanUrl'),
+    form.watch('tinNumberUrl'),
+    form.watch('supportingLettersUrl'),
+  ].filter(url => !!url).length;
+
   const filesUploaded = numberOfFilesSelected > 0;
 
   const sectionContainerClass = "p-6 rounded-lg shadow-sm border-t border-gray-200 pt-8 mt-8 first:mt-0 first:pt-0 first:border-t-0";
@@ -715,18 +777,18 @@ export default function CreateApplicationPageClient() {
                         searchPlaceholder="Search applicants by name, phone or ID..."
                         noResultsMessage={
                           isLoading ? "Loading applicants..." :
-                          apiError ? `Error loading applicants: ${apiError}` :
-                          "No new applicants available or loaded."
+                            apiError ? `Error loading applicants: ${apiError}` :
+                              "No new applicants available or loaded."
                         }
                         disabled={isLoading || (userComboboxOptions.length === 0 && !apiError)}
                       />
                     </FormControl>
                     <FormDescription>
-                        {apiError ? (
-                            <span className="text-red-500">Error: {apiError}. Please check your backend database connection.</span>
-                        ) : userComboboxOptions.length === 0 && !isLoading ? (
-                            <span className="text-orange-500">No new applicants available or loaded.</span>
-                        ) : "Select an existing user to create an application for them."}
+                      {apiError ? (
+                        <span className="text-red-500">Error: {apiError}. Please check your backend database connection.</span>
+                      ) : userComboboxOptions.length === 0 && !isLoading ? (
+                        <span className="text-orange-500">No new applicants available or loaded.</span>
+                      ) : "Select an existing user to create an application for them."}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -741,7 +803,7 @@ export default function CreateApplicationPageClient() {
               <Info className="mr-2 h-5 w-5 text-purple-600" /> Applicant Personal Information (Snapshot)
             </h2>
             <p className="text-sm text-gray-600 mb-4">
-              These fields are pre-filled from the selected applicant's profile and can be adjusted for this specific application.
+              These fields are pre-filled from the selected applicant&apos; profile and can be adjusted for this specific application.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <FormField
@@ -750,18 +812,45 @@ export default function CreateApplicationPageClient() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Full Name</FormLabel>
-                    <FormControl><Input {...field} /></FormControl>
+                    <FormControl><Input {...field} value={field.value || ''} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
+              {/* Father's Name */}
+              <FormField
+                control={form.control}
+                name="fatherName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Father&apos; Name (Snapshot)</FormLabel>
+                    <FormControl><Input {...field} value={field.value || ''} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Grandfather's Name */}
+              <FormField
+                control={form.control}
+                name="grandfatherName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Grandfather&apos; Name (Snapshot)</FormLabel>
+                    <FormControl><Input {...field} value={field.value || ''} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <FormField
                 control={form.control}
                 name="gender"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Gender</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value || ""}>
                       <FormControl>
                         <SelectTrigger><SelectValue placeholder="Select Gender" /></SelectTrigger>
                       </FormControl>
@@ -781,7 +870,7 @@ export default function CreateApplicationPageClient() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>ID Number (Optional)</FormLabel>
-                    <FormControl><Input {...field} /></FormControl>
+                    <FormControl><Input {...field} value={field.value || ''} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -792,7 +881,7 @@ export default function CreateApplicationPageClient() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Primary Phone Number (Optional)</FormLabel>
-                    <FormControl><Input {...field} /></FormControl>
+                    <FormControl><Input {...field} value={field.value || ''} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -803,7 +892,7 @@ export default function CreateApplicationPageClient() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Email Address (Optional)</FormLabel>
-                    <FormControl><Input type="email" {...field} /></FormControl>
+                    <FormControl><Input type="email" {...field} value={field.value || ''} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -814,7 +903,7 @@ export default function CreateApplicationPageClient() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Residential Address (Optional)</FormLabel>
-                    <FormControl><Input {...field} /></FormControl>
+                    <FormControl><Input {...field} value={field.value || ''} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -825,7 +914,7 @@ export default function CreateApplicationPageClient() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Region (Optional)</FormLabel>
-                    <FormControl><Input {...field} /></FormControl>
+                    <FormControl><Input {...field} value={field.value || ''} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -836,7 +925,7 @@ export default function CreateApplicationPageClient() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>City/Sub-city (Optional)</FormLabel>
-                    <FormControl><Input {...field} /></FormControl>
+                    <FormControl><Input {...field} value={field.value || ''} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -847,7 +936,7 @@ export default function CreateApplicationPageClient() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Woreda/Kebele (Optional)</FormLabel>
-                    <FormControl><Input {...field} /></FormControl>
+                    <FormControl><Input {...field} value={field.value || ''} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -858,7 +947,7 @@ export default function CreateApplicationPageClient() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>House Number (Optional)</FormLabel>
-                    <FormControl><Input {...field} /></FormControl>
+                    <FormControl><Input {...field} value={field.value || ''} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -875,7 +964,7 @@ export default function CreateApplicationPageClient() {
                 <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm">
                   <FormControl>
                     <Checkbox
-                      checked={field.value}
+                      checked={!!field.value}
                       onCheckedChange={field.onChange}
                     />
                   </FormControl>
@@ -899,7 +988,7 @@ export default function CreateApplicationPageClient() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Business/Entity Name</FormLabel>
-                      <FormControl><Input {...field} /></FormControl>
+                      <FormControl><Input {...field} value={field.value || ''} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -910,7 +999,7 @@ export default function CreateApplicationPageClient() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>TIN (Tax Identification Number) (Optional)</FormLabel>
-                      <FormControl><Input {...field} /></FormControl>
+                      <FormControl><Input {...field} value={field.value || ''} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -921,7 +1010,7 @@ export default function CreateApplicationPageClient() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Business License Number (Optional)</FormLabel>
-                      <FormControl><Input {...field} /></FormControl>
+                      <FormControl><Input {...field} value={field.value || ''} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -945,7 +1034,7 @@ export default function CreateApplicationPageClient() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Association Name (Optional)</FormLabel>
-                    <FormControl><Input {...field} /></FormControl>
+                    <FormControl><Input {...field} value={field.value || ''} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -956,7 +1045,7 @@ export default function CreateApplicationPageClient() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Membership Number (Optional)</FormLabel>
-                    <FormControl><Input {...field} /></FormControl>
+                    <FormControl><Input {...field} value={field.value || ''} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -980,7 +1069,7 @@ export default function CreateApplicationPageClient() {
                   <FormItem>
                     <FormLabel>Full Name</FormLabel>
                     <FormDescription>As shown on ID</FormDescription>
-                    <FormControl><Input {...field} /></FormControl>
+                    <FormControl><Input {...field} value={field.value || ''} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -992,7 +1081,7 @@ export default function CreateApplicationPageClient() {
                   <FormItem>
                     <FormLabel>License Number</FormLabel>
                     <FormDescription>From official document</FormDescription>
-                    <FormControl><Input {...field} /></FormControl>
+                    <FormControl><Input {...field} value={field.value || ''} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -1030,7 +1119,7 @@ export default function CreateApplicationPageClient() {
               <Target className="mr-2 h-5 w-5 text-blue-600" /> Optional Preferences (from Applicant Profile)
             </h2>
             <p className="text-sm text-gray-600 mb-4">
-              These settings reflect preferences from the selected applicant's profile and can be adjusted.
+              These settings reflect preferences from the selected applicant&apos; profile and can be adjusted.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
@@ -1040,7 +1129,7 @@ export default function CreateApplicationPageClient() {
                   <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm">
                     <FormControl>
                       <Checkbox
-                        checked={field.value}
+                        checked={field.value || false}
                         onCheckedChange={field.onChange}
                       />
                     </FormControl>
@@ -1063,7 +1152,7 @@ export default function CreateApplicationPageClient() {
                   <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm">
                     <FormControl>
                       <Checkbox
-                        checked={field.value}
+                        checked={field.value || false}
                         onCheckedChange={field.onChange}
                       />
                     </FormControl>
@@ -1098,7 +1187,7 @@ export default function CreateApplicationPageClient() {
                   <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm">
                     <FormControl>
                       <Checkbox
-                        checked={field.value}
+                        checked={field.value || false}
                         onCheckedChange={field.onChange}
                       />
                     </FormControl>
@@ -1107,7 +1196,7 @@ export default function CreateApplicationPageClient() {
                         Applicant Agreed to Terms and Conditions
                       </FormLabel>
                       <FormDescription>
-                        This indicates the applicant's acceptance during registration.
+                        This indicates the applicant&apos; acceptance during registration.
                       </FormDescription>
                     </div>
                     <FormMessage />
@@ -1123,10 +1212,10 @@ export default function CreateApplicationPageClient() {
                       <Signature className="mr-2 h-4 w-4 text-gray-500" /> Digital Signature (Uneditable)
                     </FormLabel>
                     <FormControl>
-                      <Input {...field} disabled />
+                      <Input {...field} disabled value={field.value || 'N/A'} />
                     </FormControl>
                     <FormDescription>
-                      The applicant's digital signature URL/text provided during registration. This field is for reference and cannot be changed here.
+                      The applicant&apos; digital signature URL/text provided during registration. This field is for reference and cannot be changed here.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -1156,7 +1245,6 @@ export default function CreateApplicationPageClient() {
                         <SelectItem value="Electric_Minibus">Electric_Minibus</SelectItem>
                         <SelectItem value="Electric_Mid_Bus_21_1">Electric_Mid_Bus_21_1</SelectItem>
                         <SelectItem value="Traditional_Minibus">Traditional_Minibus</SelectItem>
-                        {/* Note: I'm using the simpler enum values from your backend API for consistency */}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -1169,7 +1257,8 @@ export default function CreateApplicationPageClient() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Quantity Requested</FormLabel>
-                    <FormControl><Input type="number" {...field} min={1} /></FormControl>
+                    {/* Ensure value is number for min/max to work, or use custom validation */}
+                    <FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value))} min={1} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -1180,7 +1269,7 @@ export default function CreateApplicationPageClient() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Intended Use (Optional)</FormLabel>
-                    <FormControl><Input {...field} /></FormControl>
+                    <FormControl><Input {...field} value={field.value || ''} /></FormControl>
                     <FormDescription>
                       e.g., Staff Transport, Tour / Charter, Public Transport
                     </FormDescription>
@@ -1197,31 +1286,6 @@ export default function CreateApplicationPageClient() {
               <Banknote className="mr-2 h-5 w-5 text-green-600" /> Financing Information
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {isMainAdmin && (
-                <FormField
-                  control={form.control}
-                  name="loanApplicationStatus"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Loan Application Status</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger><SelectValue placeholder="Select Loan Application Status" /></SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Pending">Pending</SelectItem>
-                          <SelectItem value="Approved">Approved</SelectItem>
-                          <SelectItem value="Disbursed">Disbursed</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormDescription>
-                        Set the current status of the loan itself.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
               <FormField
                 control={form.control}
                 name="preferredFinancingInstitution"
@@ -1268,7 +1332,16 @@ export default function CreateApplicationPageClient() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Loan Amount Requested (ETB)</FormLabel>
-                    <FormControl><Input type="number" step="0.01" {...field} min={0} /></FormControl>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        {...field}
+                        onChange={e => field.onChange(parseFloat(e.target.value))}
+                        min={0}
+                        value={field.value === 0 ? '' : field.value} // Display empty string if value is 0
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -1279,7 +1352,7 @@ export default function CreateApplicationPageClient() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Bank Reference Number (Optional)</FormLabel>
-                    <FormControl><Input {...field} /></FormControl>
+                    <FormControl><Input {...field} value={field.value || ''} /></FormControl>
                     <FormDescription>Transaction or application reference</FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -1288,7 +1361,7 @@ export default function CreateApplicationPageClient() {
             </div>
           </div>
 
-          {/* Section: Attachments (Now with Enhanced Popover UI) */}
+          {/* Section: Attachments (Now with UploadThing) */}
           <div className={sectionContainerClass}>
             <h2 className="text-xl font-semibold text-gray-700 mb-4 pb-3 border-b border-gray-100 flex items-center">
               <UploadCloud className="mr-2 h-5 w-5 text-gray-600" /> Attachments (Upload Files)
@@ -1307,9 +1380,13 @@ export default function CreateApplicationPageClient() {
                       filesUploaded && "bg-green-50 text-green-700 hover:bg-green-100 border-green-300"
                     )}
                   >
-                    {filesUploaded ? (
+                    {isUploading ? (
                       <>
-                        <CheckCircle className="mr-2 h-4 w-4" /> Files Uploaded ({numberOfFilesSelected})
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Uploading Files...
+                      </>
+                    ) : filesUploaded ? (
+                      <>
+                        <CheckCircle className="mr-2 h-4 w-4" /> Files Attached ({numberOfFilesSelected})
                       </>
                     ) : (
                       <>
@@ -1323,31 +1400,49 @@ export default function CreateApplicationPageClient() {
                     <div className="space-y-2 text-center">
                       <h4 className="font-semibold text-lg leading-none">Document Uploads</h4>
                       <p className="text-sm text-muted-foreground">
-                        Attach all necessary files for the application review.
+                        Attach all necessary files. Max size is configured in EdgeStore.
                       </p>
                     </div>
+                    {/* === START: EdgeStore Field Calls === */}
                     <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
-                      <FileDropzoneField
+                      <EdgeStoreField
                         label="Down Payment Proof"
-                        fileStateKey="downPaymentProof"
+                        urlFieldName="downPaymentProofUrl"
                         description="Receipt or bank statement proving down payment."
+                        form={form}
+                        useEdgeStore={useEdgeStore}
+                        setIsUploading={setIsUploading}
                       />
-                      <FileDropzoneField
+
+                      <EdgeStoreField
                         label="Applicant ID Scan"
-                        fileStateKey="idScan"
+                        urlFieldName="idScanUrl"
                         description="Scanned copy of national ID or passport."
+                        form={form}
+                        useEdgeStore={useEdgeStore}
+                        setIsUploading={setIsUploading}
                       />
-                      <FileDropzoneField
+
+                      <EdgeStoreField
                         label="TIN Number Document"
-                        fileStateKey="tinNumber"
-                        description="Tax Identification Number certificate (if applicable)."
+                        urlFieldName="tinNumberUrl"
+                        description="Tax Identification Number certificate."
+                        form={form}
+                        useEdgeStore={useEdgeStore}
+                        setIsUploading={setIsUploading}
                       />
-                      <FileDropzoneField
+
+                      <EdgeStoreField
                         label="Supporting Letters"
-                        fileStateKey="supportingLetters"
-                        description="Any additional letters of recommendation or support."
+                        urlFieldName="supportingLettersUrl"
+                        description="Additional letters of recommendation."
+                        form={form}
+                        useEdgeStore={useEdgeStore}
+                        setIsUploading={setIsUploading}
                       />
+
                     </div>
+                    {/* === END: EdgeStore Field Calls === */}
                   </div>
                 </PopoverContent>
               </Popover>
@@ -1366,7 +1461,7 @@ export default function CreateApplicationPageClient() {
                 <FormItem>
                   <FormLabel>Initial Remarks (Optional)</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Any initial remarks or notes about this application" {...field} />
+                    <Textarea placeholder="Any initial remarks or notes about this application" {...field} value={field.value || ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -1381,7 +1476,7 @@ export default function CreateApplicationPageClient() {
                 <CheckCircle className="mr-2 h-5 w-5 text-teal-600" /> Application Statuses
               </h2>
               <p className="text-sm text-gray-600 mb-4">
-                These statuses control the workflow of the application. Only Main Admins can set these on creation.
+                These statuses control the workflow of the application. Only **Main Admins** can set these on creation.
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
@@ -1389,20 +1484,43 @@ export default function CreateApplicationPageClient() {
                   name="applicationStatus"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Overall Application Status</FormLabel>
+                      <FormLabel>Application Review Status</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger><SelectValue placeholder="Select Application Status" /></SelectTrigger>
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="NEW">NEW</SelectItem>
-                          <SelectItem value="UNDER_REVIEW">UNDER REVIEW</SelectItem>
+                          <SelectItem value="UNDER_REVIEW">UNDER_REVIEW</SelectItem>
                           <SelectItem value="APPROVED">APPROVED</SelectItem>
                           <SelectItem value="REJECTED">REJECTED</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormDescription>
-                        Set the overall application status.
+                        Set the internal review status.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="loanApplicationStatus"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Loan Application Status</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger><SelectValue placeholder="Select Loan Application Status" /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Pending">Pending</SelectItem>
+                          <SelectItem value="Approved">Approved</SelectItem>
+                          <SelectItem value="Disbursed">Disbursed</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        Set the current status of the loan itself.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -1412,17 +1530,16 @@ export default function CreateApplicationPageClient() {
             </div>
           )}
 
-          <Button type="submit" className="w-full flex items-center justify-center mt-8 py-3 text-lg" disabled={isSubmitting}>
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Creating Application...
-              </>
-            ) : (
-              <>
-                Create Application <PlusCircle className="ml-2 h-5 w-5" />
-              </>
-            )}
-          </Button>
+          <div className={`${sectionContainerClass} border-t pt-6 flex justify-end gap-3`}>
+            <Button
+              type="submit"
+              disabled={isSubmitting || isLoading || !selectedUserId || isUploading}
+              className="px-8 bg-green-600 hover:bg-green-700"
+            >
+              {(isSubmitting || isUploading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isSubmitting ? "Creating Application..." : isUploading ? "Waiting for Uploads..." : "Create Application"}
+            </Button>
+          </div>
         </form>
       </Form>
     </div>

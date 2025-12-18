@@ -4,15 +4,20 @@
 import React from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { Leaf, Handshake, Banknote, Factory as FactoryIcon, Globe, CheckCircle, Lightbulb, UserCheck, User, Road, ArrowLeft } from 'lucide-react';
+import { Leaf, Handshake, Banknote, Factory as FactoryIcon, CheckCircle, Lightbulb, UserCheck, User, ArrowLeft } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import Footer from '@/components/footer/page';
 import Navbar from '@/components/Navbar/page';
 import Link from 'next/link'; // Import Link for navigation
-import { Button } from '@/components/ui/button';
+// import { Button } from '@/components/ui/button'; <-- Removed: Unused
 
 // Component for side-by-side layout within a box
-const ContentSection = ({ children, className = "" }) => (
+type ContentSectionProps = {
+  children: React.ReactNode;
+  className?: string;
+};
+
+const ContentSection = ({ children, className = "" }: ContentSectionProps) => (
   <motion.section
     initial={{ opacity: 0, y: 50 }}
     whileInView={{ opacity: 1, y: 0 }}
@@ -185,7 +190,7 @@ export default function AddisAbabaProjectDetailsPage() {
               Strengthened <span className='text-blue-600'>Strategic Partnerships</span>
             </h2>
             <p className="text-lg font-light text-zinc-600 dark:text-zinc-400 leading-relaxed">
-              Our initiative has solidified a strong collaboration with the Addis Ababa City Transport Bureau. We have executed a formal Memorandum of Understanding (MoU) that outlines our joint commitment to addressing the city's significant transportation challenges. This partnership ensures our efforts are aligned with public policy and urban development goals.
+              Our initiative has solidified a strong collaboration with the Addis Ababa City Transport Bureau. We have executed a formal Memorandum of Understanding (MoU) that outlines our joint commitment to addressing the city&apos; significant transportation challenges. This partnership ensures our efforts are aligned with public policy and urban development goals.
             </p>
             <div className="w-full relative h-72 rounded-2xl overflow-hidden shadow-xl mt-4 lg:hidden">
               <Image
@@ -221,7 +226,7 @@ export default function AddisAbabaProjectDetailsPage() {
             <ul className="list-none space-y-4 text-zinc-700 dark:text-zinc-300">
               <li className="flex items-center gap-2">
                 <CheckCircle className="text-blue-600 dark:text-blue-400" size={20} />
-                Advanced Technology: King Long's vehicles are equipped with modern features that ensure safety and efficiency.
+                Advanced Technology: King Long&apos; vehicles are equipped with modern features that ensure safety and efficiency.
               </li>
               <li className="flex items-center gap-2">
                 <CheckCircle className="text-blue-600 dark:text-blue-400" size={20} />

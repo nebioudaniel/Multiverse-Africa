@@ -10,8 +10,27 @@ import Navbar from '@/components/Navbar/page';
 import { Package, Award, Globe, ArrowLeft, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 
+// --- TYPE DEFINITIONS FOR COMPONENTS (FIX) ---
+interface AnimatedContentSectionProps {
+  children: React.ReactNode;
+  delay?: number;
+}
+
+interface ShacmanImage {
+  src: string;
+  alt: string;
+}
+
+interface GalleryModalProps {
+  images: ShacmanImage[];
+  selectedIndex: number;
+  onClose: () => void;
+}
+// ---------------------------------------------
+
+
 // --- DATA ---
-const SHACMAN_IMAGES = [
+const SHACMAN_IMAGES: ShacmanImage[] = [
   // Gallery 1 (3 images)
   { src: "/images/sch3.png", alt: "SHACMAN Dump Truck (Construction Series)" },
   { src: "/images/sch6.png", alt: "SHACMAN Mixer Truck (Concrete Solutions)" },
@@ -24,8 +43,8 @@ const SHACMAN_IMAGES = [
   { src: "/images/oil2.png", alt: "SHACMAN Heavy-Duty Oil Tanker" },
 ];
 
-// Reusable Content Section with animation
-const AnimatedContentSection = ({ children, delay = 0 }) => (
+// Reusable Content Section with animation (FIX: Added AnimatedContentSectionProps type)
+const AnimatedContentSection = ({ children, delay = 0 }: AnimatedContentSectionProps) => (
   <motion.section
     initial={{ opacity: 0, y: 50 }}
     whileInView={{ opacity: 1, y: 0 }}
@@ -37,8 +56,8 @@ const AnimatedContentSection = ({ children, delay = 0 }) => (
   </motion.section>
 );
 
-// --- Gallery Modal Component (Lightbox) ---
-const GalleryModal = ({ images, selectedIndex, onClose }) => {
+// --- Gallery Modal Component (Lightbox) (FIX: Added GalleryModalProps type) ---
+const GalleryModal = ({ images, selectedIndex, onClose }: GalleryModalProps) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(selectedIndex);
 
   const goToNext = () => {
@@ -114,9 +133,10 @@ const GalleryModal = ({ images, selectedIndex, onClose }) => {
 // --- Main Page Component ---
 const ShacmanDetails = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  // FIX: Explicitly type the state setter argument (index)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
-  const openModal = (index) => {
+  const openModal = (index: number) => {
     setSelectedImageIndex(index);
     setIsModalOpen(true);
   };
@@ -128,11 +148,11 @@ const ShacmanDetails = () => {
         
         {/* Back to Home Page button */}
         <div className="container mx-auto px-4 max-w-7xl">
-          <Link href="/" passHref>
-            <div className="inline-flex items-center text-blue-600 dark:text-blue-400 font-semibold mb-8 transition-colors duration-200 hover:text-blue-500">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Home
-            </div>
+          <Link href="/" 
+            className="inline-flex items-center text-blue-600 dark:text-blue-400 font-semibold mb-8 transition-colors duration-200 hover:text-blue-500"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Home
           </Link>
         </div>
 

@@ -1,8 +1,7 @@
-// src/app/[locale]/register/Step2Form.tsx (Main File)
 'use client';
 
-import React, { useMemo, useState } from "react"; // ADDED useState
-import { useForm } from "react-hook-form";
+import React, { useMemo, useState, useEffect } from "react";
+import { useForm, FieldPath } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
@@ -18,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+// Assuming VehicleCarousel is a local path and accessible
 import { VehicleDetailSelector } from "./VehicleCarousel"; 
 import { useRegistration, fullRegistrationSchema, RegistrationFormData } from "./RegisterFormContainer";
 import { useRouter } from 'next/navigation';
@@ -33,16 +33,12 @@ import {
   Handshake,
   HardHat,
   ChevronRight,
-  ClipboardList
 } from 'lucide-react';
-// NEW: Import the Terms Dialog component
+// Assuming TermsDialog is a local path and accessible
 import TermsDialog from '../../app/[locale]/register/TermsDialog'; 
-
-
+import type { SubmitHandler } from "react-hook-form";
 // --- Terms and Conditions Content (Raw HTML/Text for the Dialog) ---
-// Note: Using a single string with <br> and <b> for simplicity in presentation
 const TERMS_CONTENT_EN = `
-
 <b>This Website Registration Agreement (“Agreement”) is entered into by and between:</b>
 Multiverse Enterprise PLC (“Multiverse”), duly incorporated under the laws of the Federal Democratic Republic of Ethiopia, with its principal office at Gotera ,Adiss Ababa, acting as the official sales and marketing partner for approved vehicle suppliers, and as the operator of this registration platform,
 <b>AND</b>
@@ -114,89 +110,21 @@ Any individual, association, company, cooperative, regional state, or government
 13.1. <b>Registration is not a Sale</b> – Submission of information through this website constitutes only an expression of interest. It does not create any entitlement to delivery, nor does it constitute a reservation or guarantee of a vehicle.
 13.2. <b>No Guarantee of Financing</b> – Multiverse does not provide financing. All financing is subject to approval by independent Banks, and Multiverse shall not be liable for rejection, delays, or terms of any loan application.
 13.3. <b>No Liability for Manufacturing, Assembly, or Delivery</b> – All product-related matters, including quality, safety, performance, delivery, and warranties, are the sole responsibility of the Supplier. Local assembly issues are the sole responsibility of DEIG. Multiverse acts only as sales and marketing partner and assumes no liability.
-`;
-
-const TERMS_CONTENT_AM = `
-
-
-<b>ይህ የድረ-ገጽ ምዝገባ ስምምነት (“ስምምነቱ”) በሚከተሉት ወገኖች መካከል የተፈፀመ ነው፡-</b>
-የኢትዮጵያ ፌዴራላዊ ዲሞክራሲያዊ ሪፐብሊክ ህግጋትን ተከትሎ የተቋቋመው መልቲቨርስ ኢንተርፕራይዝ ኃ.የተ.የግ.ማ. (“መልቲቨርስ”)፤ ዋናው ጽ/ቤቱ በ ጎተራ፣አዲስ አበባ የሚገኝ ሲሆን፣ ለተፈቀደላቸው የተሽከርካሪ አቅራቢዎች **ኦፊሴላዊ የሽያጭ እና ግብይት አጋር** በመሆንና የዚህን የምዝገባ መድረክ **ኦፕሬተር** በመሆን፣
-<b>እና</b>
-በዚህ መድረክ በኩል የሚመዘግብ ማንኛውም ግለሰብ፣ ማህበር፣ ኩባንያ፣ ህብረት ስራ ማህበር፣ ክልላዊ መንግስት፣ ወይም የመንግስት ኤጀንሲ (“አመልካች”)።
-
-<br><br><b>አንቀጽ 1 – ትርጉሞች</b>
-1.1. <b>“አመልካች”</b> ማለት በዚህ መድረክ ላይ ምዝገባ የሚያስገባ ማንኛውም ግለሰብ፣ ህብረት ስራ ማህበር፣ ኩባንያ፣ ክልላዊ መንግስት ወይም የመንግስት አካል ማለት ነው።
-1.2. <b>“አቅራቢዎች”</b> ማለት ኪንግ ሎንግ (King Long)፣ ሻክማን (Shacman)፣ ወይም ሌላ ማንኛውም የጸደቀ ሚኒባስ፣ ሚድበስ፣ የጭነት መኪና ወይም ተዛማጅ ምርቶች አምራች ማለት ነው።
-1.3. <b>“ዲ.ኢ.አይ.ጂ (DEIG)”</b> ማለት በኢትዮጵያ ውስጥ የኤስ.ኬ.ዲ (SKD) / ሲ.ኬ.ዲ (CKD) ኪት ስብስቦችን የማገጣጠም ኃላፊነት ያለበት የመከላከያ ኢንጂነሪንግ ኢንዱስትሪ ግሩፕ ማለት ነው።
-1.4. <b>“ባንክ”</b> ማለት አመልካቹ ለፋይናንስ ወይም ለብድር አገልግሎት የሚያነጋግረው ማንኛውም የፋይናንስ ተቋም ማለት ነው።
-1.5. <b>“ምዝገባ”</b> ማለት ተሽከርካሪዎችን ለመግዛት ፍላጎትን ለመግለጽ በዚህ መድረክ ላይ መረጃ ማስገባት ማለት ነው።
-1.6. <b>“የሽያጭ ስምምነት”</b> ማለት በአመልካች እና በአቅራቢው (በመልቲቨርስ የሽያጭ እና ግብይት ወኪልነት፣ ወይም በቀጥታ ከአቅራቢው ጋር) መካከል የሚደረግ የተለየ ውል ሲሆን፣ ይህም ሙሉ ክፍያ ሲፈፀም ብቻ ተፈፃሚ ይሆናል።
-
-<br><br><b>አንቀጽ 2 – ዓላማ እና ወሰን</b>
-2.1. ይህ ስምምነት በጸደቁ አምራቾች የሚቀርቡ ተሽከርካሪዎችን ለመመዝገብ የመልቲቨርስን ድረ-ገጽ አጠቃቀም የሚገዛ ነው።
-2.2. መልቲቨርስ ለእንደዚህ አይነት ተሽከርካሪዎች ብቸኛ የሽያጭ እና ግብይት አጋር በመሆን ያገለግላል እንጂ የአምራች፣ የአገጣጣሚ ወይም የፋይናንስ ኃላፊነቶችን አይወስድም።
-2.3. ምዝገባው የፍላጎት መግለጫ ብቻ ሲሆን **ግዴታ ያለበት የግዢ ወይም የፋይናንስ ግዴታ** አይፈጥርም።
-
-<br><br><b>አንቀጽ 3 – የመልቲቨርስ የሽያጭ እና ግብይት ሚና</b>
-3.1. መልቲቨርስ ለሚከተሉት ተግባራት ኃላፊነት አለበት፡-
-<ul>
-  <li>የሽያጭ እና የግብይት እንቅስቃሴዎችን ማመቻቸት፣</li>
-  <li>ቅድመ-ሽያጭ እና የፍላጎት መግለጫዎችን ማስተባበር፣</li>
-  <li>ሂደቱን ለማቀላጠፍ ከባንኮች፣ ከዲ.ኢ.አይ.ጂ እና ከአቅራቢዎች ጋር መገናኘት።</li>
-</ul>
-3.2. የመልቲቨርስ ሚና በጥብቅ **ለማመቻቸት ብቻ** የተገደበ ነው። መልቲቨርስ አምራች፣ አገጣጣሚ ወይም አበዳሪ አይደለም።
-3.3. ማንኛውም ግዴታ ያለበት ግዢ የሚፈጸመው የተለየ የሽያጭ ስምምነት ከተፈረመ እና ሙሉ ክፍያ ከተፈጸመ በኋላ ብቻ ነው።
-
-<br><br><b>አንቀጽ 4 – የአቅራቢዎች ኃላፊነቶች</b>
-4.1. የምርት ጥራት፣ አፈፃፀም፣ ደህንነት፣ ዝርዝር መግለጫዎች፣ ዋስትናዎች፣ የመላኪያ የጊዜ ሰሌዳዎች እና ከሽያጭ በኋላ አገልግሎት የሚመለከቱ ሁሉም ግዴታዎች **በአቅራቢዎች (ለምሳሌ ኪንግ ሎንግ፣ ሻክማን) ላይ ብቻ** ያርፋሉ።
-4.2. መልቲቨርስ ለሚከተሉት ተጠያቂ አይሆንም፡-
-<ul>
-  <li>የምርት ጉድለቶች፣ የጥሪ-መመለስ (recalls) ወይም የደህንነት ጉዳዮች፣</li>
-  <li>በማምረት ወይም በመርከብ መዘግየቶች ወይም ውድቀቶች፣</li>
-  <li>በዋስትና ወይም ከሽያጭ በኋላ በሚነሱ አለመግባባቶች።</li>
-</ul>
-
-<br><br><b>አንቀጽ 5 – የዲ.ኢ.አይ.ጂ. ኃላፊነቶች</b>
-5.1. ተሽከርካሪዎች በዲ.ኢ.አይ.ጂ. በአገር ውስጥ የሚገጣጠሙ ከሆነ፣ ዲ.ኢ.አይ.ጂ. ለመገጣጠም ጥራት፣ መስፈርቶችን ማሟላት እና ሆሞሎጌሽን **ሙሉ ኃላፊነት** ይወስዳል።
-5.2. ከመገጣጠም የሚመጡ ማናቸውም መዘግየቶች፣ ስህተቶች ወይም ጉዳቶች ለመልቲቨርስ ኃላፊነት የለበትም።
-
-<br><br><b>አንቀጽ 6 – የባንኮች እና የፋይናንስ ኃላፊነቶች</b>
-6.1. የፋይናንስ ውሳኔዎች፣ ማጽደቂያዎች፣ ውድቀቶች እና ውሎች **ብቻቸውን የባንኮች ኃላፊነት** ናቸው።
-6.2. መልቲቨርስ የፋይናንስ ወይም የብድር ማጽደቂያዎችን ዋስትና አይሰጥም።
-6.3. መልቲቨርስ በፋይናንስ ዝግጅቶች ምክንያት ለሚነሱ መዘግየቶች፣ ውድቀቶች ወይም አለመግባባቶች ተጠያቂ አይሆንም።
-
-<br><br><b>አንቀጽ 7 – የአመልካቾች ግዴታዎች</b>
-7.1. አመልካቾች በሚመዘገቡበት ጊዜ **ሙሉ እና ትክክለኛ መረጃ** መስጠት አለባቸው።
-7.2. አመልካቾች የሚከተሉትን ይገነዘባሉ፡-
-<ul>
-  <li>ምዝገባ የተሽከርካሪዎች መመደብ ወይም መላክ ዋስትና አይሰጥም፣</li>
-  <li>ሽያጭ የሚፈጸመው የሽያጭ ስምምነት ከተፈረመ እና ሙሉ ክፍያ ከተፈጸመ በኋላ ብቻ ነው፣</li>
-  <li>የፋይናንስ ዝግጅቶች በአመልካች እና በባንክ መካከል ናቸው።</li>
-</ul>
-7.3. አመልካቾች በሐሰት ወይም አሳሳች መረጃ ምክንያት ለሚደርሱ ኪሳራዎች መልቲቨርስን ካሳ ይከፍላሉ።
-
-<br><br><b>አንቀጽ 8 – የተጠያቂነት ገደብ</b>
-8.1. መልቲቨርስ ለሚከተሉት ተጠያቂ አይሆንም፡-
-<ul>
-  <li>ቀጥተኛ፣ ቀጥተኛ ያልሆኑ ወይም ተከታይ ጉዳቶች፣</li>
-  <li>የፋይናንስ ወይም የንግድ ኪሳራዎች፣</li>
-  <li>የምርት ስህተቶች፣ አደጋዎች ወይም የጥሪ-መመለስ፣</li>
-  <li>በዲ.ኢ.አይ.ጂ. ኃላፊነት ስር ያሉ የመገጣጠም ጉዳዮች፣</li>
-  <li>በባንኮች የፋይናንስ ውድቀቶች።</li>
-</ul>
-8.2. ሁሉም ተጠያቂነት እንደአግባቡ በአቅራቢዎች፣ በዲ.ኢ.አይ.ጂ. ወይም በባንኮች ላይ ያርፋል።
-
-<br><br><b>አንቀጽ 13 – ማስተባበያ (Disclaimer)</b>
-13.1. <b>ምዝገባ ሽያጭ አይደለም</b> – በዚህ ድረ-ገጽ በኩል መረጃ ማስገባት የፍላጎት መግለጫ ብቻ ነው። ለመላክ ምንም ዓይነት መብት አይፈጥርም፣ እንዲሁም የተሽከርካሪ ማስያዝ (reservation) ወይም ዋስትና አይሆንም።
-13.2. <b>የፋይናንስ ዋስትና የለም</b> – መልቲቨርስ ፋይናንስ አይሰጥም። ሁሉም ፋይናንስ ነፃ በሆኑ ባንኮች ፈቃድ የሚወሰን ሲሆን፣ መልቲቨርስ ለማንኛውም የብድር ማመልከቻ ውድቀት፣ መዘግየት ወይም ውል ተጠያቂ አይሆንም።
-13.3. <b>ለማምረት፣ ለመገጣጠም ወይም ለማድረስ ተጠያቂነት የለም</b> – የምርት ጥራት፣ ደህንነት፣ አፈፃፀም፣ አቅርቦት እና ዋስትናዎችን ጨምሮ ከምርት ጋር የተያያዙ ሁሉም ጉዳዮች **የአቅራቢው ብቸኛ ኃላፊነት** ናቸው። የአገር ውስጥ መገጣጠም ጉዳዮች **ብቻቸውን የዲ.ኢ.አይ.ጂ. ኃላፊነት** ናቸው። መልቲቨርስ እንደ ሽያጭ እና ግብይት አጋር ብቻ የሚሰራ ሲሆን ምንም አይነት ተጠያቂነት አይወስድም።
 13.4. <b>ለጉዳት ተጠያቂነት የለም</b> – መልቲቨርስ በሚከተሉት ምክንያት ለሚመጡ ማናቸውም ቀጥተኛ፣ ቀጥተኛ ያልሆኑ፣ ድንገተኛ ወይም ተከታይ ጉዳቶች ተጠያቂ አይሆንም፡- በዚህ ድረ-ገጽ ከመጠቀም፣ የፋይናንስ ውድቀት፣ በቀረቡ ተሽከርካሪዎች ላይ የሚገኙ ጉድለቶች ወይም ስህተቶች፣ በመገጣጠም ወይም በመላክ መዘግየቶች፣ በቀረቡ ተሽከርካሪዎች ላይ የሚደርሱ አደጋዎች ወይም ጉዳቶች።
 13.5. <b>አስገዳጅነት</b> – አመልካቹ በመመዝገብ ይህንን ማስተባበያ በግልጽ እንደተቀበለ ያረጋግጣል፣ እናም ሁሉም ተጠያቂነቶች እንደአግባቡ በአቅራቢዎች፣ በዲ.ኢ.አይ.ጂ. ወይም በባንኮች ላይ እንደሚወድቁ ይስማማል።
 `;
 
 
-// --- Sidebar Onboarding Step Component (unchanged) ---
-function StepSidebarItem({ icon, title, description, isActive, isCompleted }) {
+// --- Sidebar Onboarding Step Component ---
+interface StepSidebarItemProps {
+    icon: React.ReactNode;
+    title: string;
+    description: string;
+    isActive: boolean;
+    isCompleted: boolean;
+}
+
+function StepSidebarItem({ icon, title, description, isActive, isCompleted }: StepSidebarItemProps) {
     const statusIcon = isCompleted 
         ? <CheckCircle className="text-green-500 w-6 h-6" />
         : isActive
@@ -218,18 +146,19 @@ function StepSidebarItem({ icon, title, description, isActive, isCompleted }) {
     );
 }
 
-// --- Wizard Progress Bar Component (unchanged) ---
-function WizardProgress({ activeStep }) { 
+// --- Wizard Progress Bar Component ---
+function WizardProgress({ activeStep }: { activeStep: number }) { 
     const steps = [
         { name: "Personal & Business Details", icon: <User className="w-4 h-4" /> },
         { name: "Minibus & Service Details", icon: <Car className="w-4 h-4" /> },
+        { name: "Review & Confirm", icon: <CheckCircle className="w-4 h-4" /> },
     ];
 
     return (
         <div className={`flex items-center w-full max-w-sm mx-auto lg:max-w-none`}>
             {steps.map((step, index) => (
                 <div key={index} className="flex items-center flex-1">
-                    <div className={`relative flex items-center justify-center w-8 h-8 rounded-full ${index < activeStep ? 'bg-green-600' : 'bg-gray-200'}`}>
+                    <div className={`relative flex items-center justify-center w-8 h-8 rounded-full ${index < activeStep ? 'bg-green-600' : (index === activeStep - 1 ? 'bg-blue-600' : 'bg-gray-200')}`}>
                         {index < activeStep - 1 ? (
                             <CheckCircle className="w-5 h-5 text-white" />
                         ) : (
@@ -240,7 +169,7 @@ function WizardProgress({ activeStep }) {
                         {step.name}
                     </span>
                     {index < steps.length - 1 && (
-                        <div className={`flex-1 h-0.5 mx-2 ${index < activeStep ? 'bg-green-600' : 'bg-gray-300'}`}></div>
+                        <div className={`flex-1 h-0.5 mx-2 ${index < activeStep - 1 ? 'bg-green-600' : (index === activeStep - 1 ? 'bg-blue-600' : 'bg-gray-300')}`}></div>
                     )}
                 </div>
             ))}
@@ -249,16 +178,18 @@ function WizardProgress({ activeStep }) {
 }
 
 
-// --- Validation Schema (unchanged) ---
-const step2FormSchema = (t: any) =>
+// --- Validation Schema Generator (Uses 't' for messages and coercion) ---
+const step2FormSchemaGenerator = (t: (key: string) => string) => 
   z.object({
     preferredVehicleType: z.string().min(1, t("step2.validation.vehicleTypeRequired")),
     vehicleQuantity: z.coerce
-      .number()
+      // Use message property for runtime coercion errors
+      .number({ message: t("step2.validation.quantityRequired")}) 
       .int(t("step2.validation.quantityWholeNumber"))
       .min(1, t("step2.validation.quantityMin"))
       .max(100, t("step2.validation.quantityMax")), 
     intendedUse: z.string().optional().nullable().transform(e => {
+        // The runtime transformation logic stays here for validation
         if (e === "" || e === "none") {
             return null;
         }
@@ -268,53 +199,90 @@ const step2FormSchema = (t: any) =>
     agreedToTerms: z.boolean().refine(val => val === true, t("step2.validation.agreeToTerms")),
   });
 
+
+// --- FIXED TYPE INFERENCE ---
+// 1. We get the generated schema's type
+type SchemaGeneratorType = ReturnType<typeof step2FormSchemaGenerator>;
+
+type Step2FormInput = z.input<SchemaGeneratorType>;   // 👈 unknown (pre-coercion)
+type Step2FormData  = z.output<SchemaGeneratorType>;  // 👈 number (post-coercion)
+
+
+// Get the type of the field paths for useForm's setError
+type Step2FormFieldPath = FieldPath<Step2FormData>;
+
+
 export function Step2Form() {
   const { formData, setFormData, resetForm } = useRegistration();
   const router = useRouter();
   const { t, locale } = useTranslation();
   
-  // NEW: State for the Dialog
   const [isTermsDialogOpen, setIsTermsDialogOpen] = useState(false);
   
   const openTermsDialog = (e: React.MouseEvent) => {
-    e.preventDefault(); // Prevent default link behavior
+    e.preventDefault();
     setIsTermsDialogOpen(true);
   };
   const closeTermsDialog = () => setIsTermsDialogOpen(false);
 
-  // Define a key for the first vehicle to use as a consistent default
+  // Default vehicle selection key
   const INITIAL_VEHICLE_KEY = "model12Seater"; 
-  const formSchema = useMemo(() => step2FormSchema(t), [t]);
   
-  // FIX: Get the translated name of the default vehicle
+  // Dynamically generate the schema with translation messages
+  const formSchema = useMemo(() => step2FormSchemaGenerator(t), [t]);
+
   const defaultVehicleName = t(`step2.vehicles.${INITIAL_VEHICLE_KEY}`); 
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      preferredVehicleType: formData.preferredVehicleType ?? defaultVehicleName,
-      vehicleQuantity: formData.vehicleQuantity ?? 1,
-      intendedUse: formData.intendedUse ?? "none", // Set default to "none" for the Select component
-      digitalSignatureUrl: formData.digitalSignatureUrl ?? "",
-      agreedToTerms: formData.agreedToTerms ?? false,
-    },
-    mode: "onBlur",
-  });
+const form = useForm<Step2FormInput>({
+  resolver: zodResolver(formSchema),
+  defaultValues: {
+    preferredVehicleType: formData.preferredVehicleType ?? defaultVehicleName,
+    vehicleQuantity: formData.vehicleQuantity ?? 1,
+    intendedUse: formData.intendedUse ?? "none",
+    digitalSignatureUrl: formData.digitalSignatureUrl ?? "",
+    agreedToTerms: formData.agreedToTerms ?? false,
+  },
+  mode: "onBlur",
+});
+
 
   const handleVehicleSelect = (vehicleName: string) => {
     form.setValue("preferredVehicleType", vehicleName, { shouldValidate: true });
   };
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    const finalValues = {
-        ...values,
-        intendedUse: values.intendedUse === "none" ? null : values.intendedUse
-    };
+  // --- START FIX: The closing brace for onSubmit was moved to the very end ---
 
-    const finalData: RegistrationFormData = { ...formData, ...finalValues };
-    setFormData(finalData);
+const onSubmit: SubmitHandler<Step2FormInput> = async (values) => {
+  // Convert INPUT → OUTPUT explicitly
+  const parsedValues = formSchema.parse(values); // Step2FormData
+
+  const finalValues = {
+    ...parsedValues,
+    intendedUse: parsedValues.intendedUse ?? "",
+  };
+
+    // Combine Step 1 data and current Step 2 data
+      const finalData: RegistrationFormData = {
+    ...formData,
+    ...finalValues,
+  };
+
+
+    // Trigger validation again before submission, although handleSubmit implicitly does this
+    const isValid = await form.trigger();
+    if (!isValid) {
+      toast.error(t('step2.validationError'), {
+        description: t('step2.cannotProceed'),
+        duration: 7000,
+        richColors: true
+      });
+      return;
+    }
+
+    setFormData(finalData); // Save data to context before submission
 
     try {
+      // Final check against the full schema before API submission
       fullRegistrationSchema.parse(finalData);
 
       const response = await fetch('/api/register', {
@@ -326,7 +294,6 @@ export function Step2Form() {
       });
 
       if (!response.ok) {
-        // ... (Error handling logic)
         const errorData = await response.json();
         toast.error(t('step2.registrationFailed'), {
           description: errorData.message || t('step2.unexpectedError'),
@@ -334,12 +301,13 @@ export function Step2Form() {
           richColors: true
         });
         if (errorData.duplicateField) {
-          form.setError(errorData.duplicateField, { type: 'manual', message: errorData.message });
+          // Assert to Step2FormFieldPath to handle errors from the Step 2 fields,
+          // though duplicates are more likely from Step 1 (which requires more complex typing if cross-step errors were required)
+          form.setError(errorData.duplicateField as Step2FormFieldPath, { type: 'manual', message: errorData.message });
         }
         return;
       }
 
-      // ... (Success logic)
       const { user } = await response.json();
       toast.success(t('step2.registrationSuccessful'), {
         description: t('step2.yourApplicationSubmitted'),
@@ -348,22 +316,25 @@ export function Step2Form() {
       });
 
       const params = new URLSearchParams();
+      // Pass the user ID or a confirmation identifier to the thank you page
       params.append('id', user.id || 'N/A');
 
       router.replace(`/${locale}/register/thanks?${params.toString()}`);
       
+      // Clear local form state on success
       resetForm();
 
     } catch (error) {
-       // ... (Validation and unexpected error handling logic)
        if (error instanceof z.ZodError) {
         toast.error(t('step2.validationError'), {
           description: t('step2.cannotProceed'),
           duration: 7000,
           richColors: true
         });
-        error.errors.forEach(err => {
-          form.setError(err.path.join('.') as any, {
+      error.issues.forEach(err => {
+          // Use FieldPath assertion for form errors
+          const path = err.path.join('.') as Step2FormFieldPath;
+          form.setError(path, {
             type: "manual",
             message: err.message,
           });
@@ -377,6 +348,7 @@ export function Step2Form() {
       }
     }
   };
+  // --- END FIX ---
 
   const intendedUseOptions = [
     t('step2.useCity'),
@@ -389,12 +361,12 @@ export function Step2Form() {
   return (
     <>
       <div className="flex min-h-screen flex-col lg:flex-row">
-        {/* Sidebar - Hydration Fix: Always render the aside, use 'hidden lg:flex' for visibility control */}
+        {/* Sidebar */}
         <aside className="hidden lg:flex w-1/3 p-13 bg-gray-50 border-r border-gray-100 flex-col justify-between">
             <div>
               <div className="mt-8 mb-8">
                  <h1 className="text-3xl font-bold text-gray-900 mb-5">Welcome to <span className="text-blue-600"> Multiverse Minibus & Truck Registration</span>!</h1>
-                <h2 className="text-xl text-gray-600 mb-8">Let's get you registered quickly and easily!</h2>
+                <h2 className="text-xl text-gray-600 mb-8">Let&apos; get you registered quickly and easily!</h2>
               </div>
               <div className="space-y-6">
                 <StepSidebarItem
@@ -486,7 +458,13 @@ export function Step2Form() {
                                 type="number"
                                 placeholder="e.g., 1"
                                 {...field}
-                                onChange={e => field.onChange(parseInt(e.target.value, 10))}
+                                value={field.value as number} // <-- FIX 1: Explicitly cast value to number
+                                onChange={e => {
+                                  // Use parseInt to ensure the stored value is an integer number
+                                  const value = parseInt(e.target.value, 10);
+                                  // Handle change by passing the number back to the form field
+                                  field.onChange(isNaN(value) ? 0 : value);
+                                }}
                                 min={1}
                                 max={100}
                               />
@@ -495,7 +473,6 @@ export function Step2Form() {
                           </FormItem>
                         )}
                       />
-      
                       <FormField
                         control={form.control}
                         name="intendedUse"
@@ -565,11 +542,10 @@ export function Step2Form() {
                           <div className="space-y-1 leading-none">
                             <FormLabel className="text-gray-800 dark:text-gray-200">
                               {t('step2.agreedToTerms')}{" "}
-                              {/* UPDATED: Replaced <a> tag with a button to open the dialog */}
                               <button 
                                 onClick={openTermsDialog}
                                 className="text-blue-600 hover:underline inline"
-                                type="button" // Important to prevent form submission
+                                type="button" 
                               >
                                 {t('step2.viewTermsAndConditions')}
                               </button>.
@@ -601,16 +577,13 @@ export function Step2Form() {
         </main>
       </div>
 
-      {/* NEW: Render the Terms and Conditions Dialog */}
-      <TermsDialog 
-        isOpen={isTermsDialogOpen}
-        onClose={closeTermsDialog}
-        locale={locale}
-        content={{
-            english: TERMS_CONTENT_EN,
-            amharic: TERMS_CONTENT_AM,
-        }}
-      />
+  <TermsDialog
+  isOpen={isTermsDialogOpen}
+  onClose={closeTermsDialog}
+  content={{
+    english: TERMS_CONTENT_EN,
+  }}
+/>
     </>
   );
 }

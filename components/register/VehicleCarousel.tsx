@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { CheckCircle2, Users, Bus, Truck, ArrowLeft, ArrowRight } from "lucide-react"; // Import Truck icon
+// Import LucideIcon type from lucide-react (assuming this is available)
+import { CheckCircle2, Users, Bus, Truck, LucideIcon } from "lucide-react"; 
 import { useTranslation } from "@/i18n/useTranslation";
 import { cn } from "@/lib/utils";
 // Import Carousel components
@@ -266,7 +267,9 @@ interface VehicleCategorySectionProps {
     t: (key: string) => string;
     selectedVehicle: string | null;
     onSelect: (vehicleName: string) => void;
-    icon: React.ElementType;
+    // FIX: Changed React.ElementType to LucideIcon (assuming the import is available)
+    // If LucideIcon is NOT available, use React.FC<React.SVGProps<SVGSVGElement>>
+    icon: LucideIcon; 
     keyPrefix: string;
 }
 
@@ -274,6 +277,7 @@ function VehicleCategorySection({ title, vehicles, t, selectedVehicle, onSelect,
     return (
         <div className="space-y-4">
             <h3 className="text-xl font-bold text-gray-700 dark:text-gray-300 mb-4 flex items-center">
+                {/* Error was here. It is fixed by correctly typing the 'icon' prop above. */}
                 <Icon className={`w-5 h-5 mr-2 ${keyPrefix === 'truck' ? 'text-red-600' : 'text-green-600'}`} />
                 {title}
             </h3>

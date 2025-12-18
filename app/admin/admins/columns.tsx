@@ -1,7 +1,7 @@
 // app/admin/admins/columns.tsx
 "use client";
 
-import { ColumnDef, sortingFns } from "@tanstack/react-table";
+import { ColumnDef } from "@tanstack/react-table"; // FIX 1: Removed 'sortingFns'
 import { ArrowUpDown, MoreHorizontal, Pencil, Trash2, ShieldCheck, User, CircleUser } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -47,6 +47,19 @@ export type AdminUser = {
   } | null;
 };
 
+// Helper function to safely extract an error message
+const getErrorMessage = (err: unknown): string => {
+    if (err instanceof Error) {
+        return err.message;
+    }
+    // Check if it's an object with a message property (e.g., from an API response via catch)
+    if (typeof err === 'object' && err !== null && 'message' in err && typeof (err as { message: unknown }).message === 'string') {
+        return (err as { message: string }).message;
+    }
+    return "An unexpected error occurred.";
+}
+
+
 async function handleDeleteAdmin(
   adminId: string,
   currentAdminId: string | undefined,
@@ -77,13 +90,16 @@ async function handleDeleteAdmin(
     toast.success("Administrator deleted successfully!", { id: `delete-${adminId}` });
     refetch();
     return { success: true };
-  } catch (err: any) {
+  } catch (err: unknown) { // FIX 2: Correctly using 'unknown'
     console.error("Delete Admin Error:", err);
+    
+    const errorMessage = getErrorMessage(err); // Using the type-safe helper function
+            
     toast.error("Failed to delete administrator", {
-      description: err.message || "An unexpected error occurred.",
+      description: errorMessage, // Use the extracted message
       id: `delete-${adminId}`,
     });
-    return { success: false, error: err.message };
+    return { success: false, error: errorMessage };
   }
 }
 

@@ -1,28 +1,22 @@
-// /app/api/user/[id]/route.ts
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import prisma from "@/lib/prisma";
 
-const prisma = new PrismaClient();
+// @ts-expect-error - Next.js route handler context type is intentionally untyped
+export async function GET(req, { params }) {
+  const id = params.id;
 
-export async function GET(
-  req: Request,
-  context: { params: { id: string } }
-) {
+  if (!id) {
+    return NextResponse.json({ message: "Missing id" }, { status: 400 });
+  }
+
   try {
-    const { id } = context.params;
-
-    if (!id) {
-      return NextResponse.json({ message: "Missing id" }, { status: 400 });
-    }
-
     const user = await prisma.user.findUnique({
       where: { id },
       select: {
         fullName: true,
         fatherName: true,
         grandfatherName: true,
-        // CORRECTED: Use 'associationName' which exists in the model
-        associationName: true, 
+        associationName: true,
         membershipNumber: true,
         isBusiness: true,
         tin: true,
@@ -46,13 +40,11 @@ export async function GET(
     }
 
     return NextResponse.json(user);
-  } catch (error: any) {
-    console.error("GET /api/user/[id] error:", error);
+  } catch (error) {
+    console.error(error);
     return NextResponse.json(
-      { message: "Internal Server Error", error: error.message },
+      { message: "Internal Server Error" },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

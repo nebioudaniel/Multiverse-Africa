@@ -4,7 +4,7 @@ import { PrismaClient } from '@prisma/client';
 // Declare a global variable to store the PrismaClient instance in development
 // This prevents hot-reloading from creating new instances on every reload
 declare global {
-  // eslint-disable-next-line no-var
+  // Line 7 has been deleted
   var prisma: PrismaClient | undefined;
 }
 

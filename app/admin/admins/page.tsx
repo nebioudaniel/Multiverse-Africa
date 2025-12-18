@@ -37,7 +37,8 @@ const AdminListPage = () => {
   };
 
   useEffect(() => {
-    if (status === "authenticated" && session?.user?.role === "MAIN_ADMIN") {
+    // FIX 1: Accessing custom 'role' property requires type assertion
+    if (status === "authenticated" && (session?.user as any)?.role === "MAIN_ADMIN") {
       fetchAdmins();
     } else if (status === "unauthenticated") {
       setIsLoading(false);
@@ -52,7 +53,8 @@ const AdminListPage = () => {
     );
   }
 
-  if (status === "unauthenticated" || session?.user?.role !== "MAIN_ADMIN") {
+  // FIX 2: Accessing custom 'role' property requires type assertion
+  if (status === "unauthenticated" || (session?.user as any)?.role !== "MAIN_ADMIN") {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-64px)] p-4">
         <div className="text-center p-8 bg-gray-100 rounded-lg shadow-md">
@@ -63,14 +65,15 @@ const AdminListPage = () => {
     );
   }
 
-  const columns = createAdminColumns(
-    session.user.id,
-    session.user.role,
-    fetchAdmins
-  );
+  // FIX 3: Cast session.user to 'any' for the column creation function call
+const columns = createAdminColumns(
+  (session?.user as any)?.id || "", // Applied (session?.user as any)? to include 'id'
+  (session?.user as any)?.role || "REGISTRAR_ADMIN", // fallback role
+  fetchAdmins
+);
 
   return (
-    <div className="container mx-auto py-10">
+    <div className="min-h-screen p-6 bg-gray-50">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Administrators</h1>
         {/* The 'Add New Admin' button now opens the dialog */}

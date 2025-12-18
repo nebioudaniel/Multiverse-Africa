@@ -1,18 +1,25 @@
 // src/app/am/oxytane-proposal/page.tsx
 "use client";
 
-import React, { useState } from 'react'; // Import useState for dialog functionality
+import React, { useState } from 'react';
 import Image from 'next/image';
-import { motion, AnimatePresence } from 'framer-motion'; // Import AnimatePresence for dialog animations
-import { Separator } from '@/components/ui/separator';
+import { motion, AnimatePresence } from 'framer-motion';
+
 import Footer from '@/components/footer/page';
 import Navbar from '@/components/Navbar/page';
-// Imported X for close button from a previous fix
-import { Leaf, TrendingUp, Handshake, ArrowLeft, Globe, Factory, FileText, X } from 'lucide-react'; 
+import { Handshake, ArrowLeft, Globe, Factory, X } from 'lucide-react';
 import Link from 'next/link';
 
+// ----------------------------------------------------
+// FIX: Define the props interface for type safety
+// ----------------------------------------------------
+interface AnimatedContentSectionProps {
+  children: React.ReactNode;
+  delay?: number;
+}
+
 // Reusable Content Section with animation
-const AnimatedContentSection = ({ children, delay = 0 }) => (
+const AnimatedContentSection = ({ children, delay = 0 }: AnimatedContentSectionProps) => (
   <motion.section
     initial={{ opacity: 0, y: 50 }}
     whileInView={{ opacity: 1, y: 0 }}
@@ -34,7 +41,7 @@ const OxytaneProposalPage = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentDialogImage, setCurrentDialogImage] = useState('');
 
-  const openDialog = (imageSrc) => {
+  const openDialog = (imageSrc: string) => {
     setCurrentDialogImage(imageSrc);
     setIsDialogOpen(true);
   };

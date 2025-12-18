@@ -6,8 +6,6 @@ import * as z from 'zod';
 import { toast } from 'sonner';
 
 // Define the schema for the entire registration process.
-// This schema MUST match the one used in your API route (api/register/route.ts)
-// and consistent across all form components (Step1Form, Step2Form).
 export const fullRegistrationSchema = z.object({
   fullName: z.string().min(2, "Full Name is required and must be at least 2 characters."),
   fatherName: z.string().min(2, "Father's Name is required and must be at least 2 characters."),
@@ -91,17 +89,19 @@ export function RegistrationProvider({ children }: { children: ReactNode }) {
             agreedToTerms: parsedData.agreedToTerms ?? false,
             vehicleQuantity: parsedData.vehicleQuantity ? Number(parsedData.vehicleQuantity) : 1,
 
+            // Fields that existed in a previous schema version but might be in localStorage:
             entityName: undefined,
             enableGpsTracking: undefined,
             acceptEpayment: undefined,
 
+            // Normalize empty strings to null for nullable Zod fields:
             grandfatherName: parsedData.grandfatherName === '' ? null : parsedData.grandfatherName,
             applicantAssociationName: parsedData.applicantAssociationName === '' ? null : parsedData.applicantAssociationName,
             membershipNumber: parsedData.membershipNumber === '' ? null : parsedData.membershipNumber,
             tin: parsedData.tin === '' ? null : parsedData.tin,
             businessLicenseNo: parsedData.businessLicenseNo === '' ? null : parsedData.businessLicenseNo,
             alternativePhoneNumber: parsedData.alternativePhoneNumber === '' ? null : parsedData.alternativePhoneNumber,
-            emailAddress: parsedData.emailAddress === '' ? null : parsedData.emailAddress, // Ensure null for empty string
+            emailAddress: parsedData.emailAddress === '' ? null : parsedData.emailAddress, 
           };
 
           fullRegistrationSchema.parse(dataToValidate);
@@ -133,8 +133,15 @@ export function RegistrationProvider({ children }: { children: ReactNode }) {
       return true;
     } catch (error) {
       if (error instanceof z.ZodError) {
-        console.error("isPrintReady validation failed:", error.errors);
-        const missingPaths = error.errors.map(err => {
+        
+        // FINAL FIX: Assert the error object to 'any' to definitively access the 'errors' property
+        // This is necessary because of strict TypeScript rules combined with Zod's generic type.
+        const zodError = error as any;
+
+        // Line 140 fix: Accessing .errors is now explicitly allowed by 'any' assertion.
+        console.error("isPrintReady validation failed:", zodError.errors); 
+        
+        const missingPaths = zodError.errors.map((err: z.ZodIssue) => { // Cast err to ZodIssue for safety inside map
             switch(err.path.join('.')) {
                 case 'fullName': return 'Full Name';
                 case 'fatherName': return 'Father\'s Name';

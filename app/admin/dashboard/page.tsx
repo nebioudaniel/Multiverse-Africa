@@ -1,5 +1,5 @@
 "use client";
-
+import React from 'react';
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -27,20 +27,19 @@ import {
   GraduationCap,
   Briefcase,
   List,
+  X 
 } from "lucide-react";
 import CustomLoader from "@/components/ui/custom-loader";
 import { Badge } from "@/components/ui/badge";
-
-// Assuming these dialog components are available in your setup
 import { 
-    Dialog, 
-    DialogContent, 
-    DialogDescription, 
-    DialogHeader, 
-    DialogTitle, 
-    DialogTrigger 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger,
+  DialogClose,
 } from '@/components/ui/dialog'; 
-
 import { 
   Bar,
   BarChart as RechartsBarChart,
@@ -52,9 +51,10 @@ import {
   YAxis 
 } from 'recharts';
 
+// --- Interface Definitions (Preserved) ---
 interface RegistrationItem {
-    category: string;
-    count: number;
+  category: string;
+  count: number;
 }
 
 interface DashboardSummary {
@@ -78,201 +78,210 @@ interface DashboardSummary {
   registrationDistribution?: RegistrationItem[];
 }
 
-// Maximum number of items to show in the card preview
 const MAX_VISIBLE_ASSOCIATIONS = 4;
-// Allowed roles for this dashboard
 const ALLOWED_ROLES = ['MAIN_ADMIN', 'REGISTRAR_ADMIN'];
 
+// Helper function to safely extract an error message (Preserved)
+const getErrorMessage = (err: unknown): string => {
+    if (err instanceof Error) {
+        return err.message;
+    }
+    if (typeof err === 'object' && err !== null && 'message' in err && typeof (err as { message: unknown }).message === 'string') {
+        return (err as { message: string }).message;
+    }
+    return "An unexpected error occurred. Please try again.";
+}
 
-// Helper component to display a single association item
+// --- Helper Components (Preserved) ---
 const AssociationItem: React.FC<{ item: RegistrationItem }> = ({ item }) => {
-    // Choose icons based on category name (customize as needed)
-    const icons: Record<string, JSX.Element> = {
-        "Business": <Briefcase className="h-5 w-5 text-blue-500" />,
-        "Students": <GraduationCap className="h-5 w-5 text-green-500" />,
-        "General": <Users className="h-5 w-5 text-purple-500" />,
-    };
+  // Use React.JSX.Element for type safety
+  const icons: Record<string, React.JSX.Element> = {
+    "Business": <Briefcase className="h-5 w-5 text-blue-500" />,
+    "Students": <GraduationCap className="h-5 w-5 text-green-500" />,
+    "General": <Users className="h-5 w-5 text-purple-500" />,
+  };
 
-    return (
-        <div
-            className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 shadow-sm hover:shadow-md transition"
-        >
-            <div className="flex items-center gap-2">
-                {icons[item.category] ?? <Building className="h-5 w-5 text-gray-400" />}
-                <span className="text-sm font-medium text-gray-700">{item.category}</span>
-            </div>
-            <span className="text-base font-semibold text-blue-600">{item.count}</span>
-        </div>
-    );
+  return (
+    <div className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 shadow-sm hover:shadow-md transition">
+      <div className="flex items-center gap-2">
+        {icons[item.category] ?? <Building className="h-5 w-5 text-gray-400" />}
+        <span className="text-sm font-medium text-gray-700">{item.category}</span>
+      </div>
+      <span className="text-base font-semibold text-blue-600">{item.count}</span>
+    </div>
+  );
 };
 
-
-// Component for the Registration Distribution Card with Dialog
 const RegistrationDistributionCard: React.FC<{ distribution: RegistrationItem[] }> = ({ distribution }) => {
-    const visibleDistribution = distribution.slice(0, MAX_VISIBLE_ASSOCIATIONS);
-    const hasMore = distribution.length > MAX_VISIBLE_ASSOCIATIONS;
+  const visibleDistribution = distribution.slice(0, MAX_VISIBLE_ASSOCIATIONS);
+  const hasMore = distribution.length > MAX_VISIBLE_ASSOCIATIONS;
 
-    return (
-        <Card className="shadow-md rounded-2xl border border-gray-100">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg font-semibold text-gray-800">
-                    <Building className="h-5 w-5 text-blue-600" />
-                    Registrations by Association
-                </CardTitle>
-                <CardDescription className="text-gray-500">
-                    Top {MAX_VISIBLE_ASSOCIATIONS} user groups (Total: {distribution.length})
-                </CardDescription>
-            </CardHeader>
+  return (
+    <Card className="shadow-md rounded-2xl border border-gray-100">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-lg font-semibold text-gray-800">
+          <Building className="h-5 w-5 text-blue-600" />
+          Registrations by Association
+        </CardTitle>
+        <CardDescription className="text-gray-500">
+          Top {MAX_VISIBLE_ASSOCIATIONS} user groups (Total: {distribution.length})
+        </CardDescription>
+      </CardHeader>
 
-            <CardContent>
-                <div className="grid gap-3 sm:grid-cols-2">
-                    {visibleDistribution.map((item, index) => (
-                        <AssociationItem key={index} item={item} />
-                    ))}
+      <CardContent>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {visibleDistribution.map((item, index) => (
+            <AssociationItem key={index} item={item} />
+          ))}
+        </div>
+
+        {hasMore && (
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="w-full mt-4 text-blue-600 border-blue-200 hover:bg-blue-50">
+                <List className="h-4 w-4 mr-2" />
+                Show All {distribution.length} Associations
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[600px]">
+              <DialogHeader>
+                <DialogTitle className="text-xl font-bold">Full Association Distribution</DialogTitle>
+                <DialogDescription>
+                  A complete list of all registered users grouped by their association/category.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="max-h-[70vh] overflow-y-auto pt-4">
+                <div className="grid gap-4">
+                  {distribution.map((item, index) => (
+                    <AssociationItem key={`dialog-${index}`} item={item} />
+                  ))}
                 </div>
-
-                {hasMore && (
-                    <Dialog>
-                        <DialogTrigger asChild>
-                            <Button variant="outline" className="w-full mt-4 text-blue-600 border-blue-200 hover:bg-blue-50">
-                                <List className="h-4 w-4 mr-2" />
-                                Show All {distribution.length} Associations
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-[600px]">
-                            <DialogHeader>
-                                <DialogTitle className="text-xl font-bold">Full Association Distribution</DialogTitle>
-                                <DialogDescription>
-                                    A complete list of all registered users grouped by their association/category.
-                                </DialogDescription>
-                            </DialogHeader>
-                            
-                            <div className="max-h-[70vh] overflow-y-auto pt-4">
-                                <div className="grid gap-4">
-                                    {distribution.map((item, index) => (
-                                        <AssociationItem key={`dialog-${index}`} item={item} />
-                                    ))}
-                                </div>
-                            </div>
-                        </DialogContent>
-                    </Dialog>
-                )}
-            </CardContent>
-        </Card>
-    );
+              </div>
+              
+              <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
+                <X className="h-4 w-4" />
+                <span className="sr-only">Close</span>
+              </DialogClose>
+            </DialogContent>
+          </Dialog>
+        )}
+      </CardContent>
+    </Card>
+  );
 };
 
+// --- Helper Functions (Preserved) ---
+const getApplicationStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
+  switch (status) {
+    case "NEW": return "outline";
+    case "UNDER_REVIEW": return "secondary";
+    case "APPROVED": return "default";
+    case "REJECTED": return "destructive";
+    default: return "default";
+  }
+};
 
-// Main Dashboard Component
+const getApplicationStatusIcon = (status: string) => {
+  switch (status) {
+    case "NEW": return <CircleDot className="inline-block h-3 w-3 mr-1 text-blue-500" />;
+    case "UNDER_REVIEW": return <Hourglass className="inline-block h-3 w-3 mr-1 text-orange-500" />;
+    case "APPROVED": return <CheckCircle className="inline-block h-3 w-3 mr-1 text-green-500" />;
+    case "REJECTED": return <XCircle className="inline-block h-3 w-3 mr-1 text-red-500" />;
+    default: return null;
+  }
+};
+
+const getLoanStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
+  switch (status) {
+    case "Pending": return "secondary";
+    case "Approved": return "default";
+    case "Disbursed": return "outline";
+    default: return "default";
+  }
+};
+
+const getLoanStatusIcon = (status: string) => {
+  switch (status) {
+    case "Pending": return <Hourglass className="inline-block h-3 w-3 mr-1 text-orange-500" />;
+    case "Approved": return <CheckCircle className="inline-block h-3 w-3 mr-1 text-green-500" />;
+    case "Disbursed": return <Wallet className="inline-block h-3 w-3 mr-1 text-purple-500" />;
+    default: return null;
+  }
+};
+
+// --- Main Component ---
 export default function AdminDashboardPage() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
+ const { data: session, status } = useSession();
+const router = useRouter();
+
   const [dashboardData, setDashboardData] = useState<DashboardSummary | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // ✅ COMBINED AND CORRECTED useEffect hook (Authentication & Data Fetching)
+  // Safely extract user role
+const userRole = (session?.user as any)?.role as string | undefined;
+const isAuthorized = userRole && ALLOWED_ROLES.includes(userRole);
+
+  // === 1. SESSION & AUTHENTICATION CHECKS (FIXED ORDER) ===
+useEffect(() => {
+  // Let the server layout handle redirects
+  if (status !== "authenticated") return;
+
+  // Client-side role safety check (optional but safe)
+  if (!isAuthorized) {
+    router.replace("/unauthorized");
+  }
+}, [status, isAuthorized, router]);
+
+if (status === "loading") {
+  return <CustomLoader message="Verifying admin credentials..." emoji="lock" />;
+}
+
+if (!session) return null;
+if (!isAuthorized) return null;
+
+
+  // === 2. DATA FETCHING ===
   useEffect(() => {
-    if (status === "loading") return;
-
-    const userRole = session?.user?.role;
-    const isAuthorized = userRole && ALLOWED_ROLES.includes(userRole);
-
-    if (status === "unauthenticated" || !isAuthorized) {
-      if (status !== "unauthenticated") {
-         toast.error("Access Denied", { description: "You do not have permission to view the dashboard." });
-      }
-      router.replace("/admin/login");
-      return;
-    }
+    // Only run fetch logic if authorized and data hasn't been loaded yet
+    // 'isAuthorized' is guaranteed to be true here because of the checks above, 
+    // but keeping it as a dependency for clarity and robust hook execution.
+    if (!isAuthorized || dashboardData) return;
 
     let isMounted = true;
-    const fetchDashboardData = async () => {
-      setIsLoading(true);
+
+    const fetchData = async () => {
       try {
         const res = await fetch("/api/admin/dashboard/summary");
         if (!res.ok) {
-          const errorData = await res.json();
-          throw new Error(errorData.message || "Failed to fetch dashboard data.");
+          const err = await res.json();
+          throw new Error(err.message || "Failed to load data");
         }
         const data: DashboardSummary = await res.json();
         if (isMounted) {
           setDashboardData(data);
           setError(null);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const errorMessage = getErrorMessage(err);
         if (isMounted) {
-          setError(err.message);
-          toast.error("Error fetching dashboard data", {
-            description: err.message,
+          setError(errorMessage);
+          toast.error("Error loading dashboard", {
+            description: errorMessage,
             duration: 5000,
             richColors: true,
           });
         }
-      } finally {
-        if (isMounted) setIsLoading(false);
       }
     };
 
-    fetchDashboardData();
+    fetchData();
 
-    return () => {
-      isMounted = false;
-    };
-  }, [session, status, router]);
+    return () => { isMounted = false; };
+  }, [isAuthorized, dashboardData]); // Dependencies remain correct
 
-  if (status === "loading") return <CustomLoader message="Checking session..." emoji="🔐" />;
 
-  const userRole = session?.user?.role;
-  const isAuthorized = userRole && ALLOWED_ROLES.includes(userRole);
-
-  if (!isAuthorized) {
-    return null;
-  }
-
-  const getApplicationStatusVariant = (status: string) => {
-    switch (status) {
-      case "NEW": return "default";
-      case "UNDER_REVIEW": return "secondary";
-      case "APPROVED": return "success";
-      case "REJECTED": return "destructive";
-      default: return "default";
-    }
-  };
-
-  const getApplicationStatusIcon = (status: string) => {
-    switch (status) {
-      case "NEW": return <CircleDot className="inline-block h-3 w-3 mr-1 text-blue-500" />;
-      case "UNDER_REVIEW": return <Hourglass className="inline-block h-3 w-3 mr-1 text-orange-500" />;
-      case "APPROVED": return <CheckCircle className="inline-block h-3 w-3 mr-1 text-green-500" />;
-      case "REJECTED": return <XCircle className="inline-block h-3 w-3 mr-1 text-red-500" />;
-      default: return null;
-    }
-  };
-
-  const getLoanStatusVariant = (status: string) => {
-    switch (status) {
-      case "Pending": return "default";
-      case "Approved": return "success";
-      case "Disbursed": return "info"; 
-      default: return "default";
-    }
-  };
-
-  const getLoanStatusIcon = (status: string) => {
-    switch (status) {
-      case "Pending": return <Hourglass className="inline-block h-3 w-3 mr-1 text-orange-500" />;
-      case "Approved": return <CheckCircle className="inline-block h-3 w-3 mr-1 text-green-500" />;
-      case "Disbursed": return <Wallet className="inline-block h-3 w-3 mr-1 text-purple-500" />;
-      default: return null;
-    }
-  };
-
-  if (isLoading || !dashboardData) {
-    return <CustomLoader message="Loading dashboard data..." emoji="📊" />;
-  }
-
-  if (error) {
+  // === 3. ERROR STATE ===
+  if (error && !dashboardData) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 bg-gray-50">
         <div className="text-center text-red-600 bg-white p-8 rounded-lg shadow-lg">
@@ -284,9 +293,17 @@ export default function AdminDashboardPage() {
     );
   }
 
-  const isAdmin = session?.user?.role === "MAIN_ADMIN";
-  const isRegistrar = session?.user?.role === "REGISTRAR_ADMIN";
+  // === 4. LOADING DATA ===
+  if (!dashboardData) {
+    return <CustomLoader message="Loading dashboard data..." emoji="chart" />;
+  }
 
+  // === 5. SUCCESS: RENDER DASHBOARD ===
+  const dashboard = dashboardData;
+  const isAdmin = userRole === "MAIN_ADMIN";
+  const isRegistrar = userRole === "REGISTRAR_ADMIN";
+
+  // The rest of the rendering logic is preserved...
   return (
     <div className="min-h-screen p-6 bg-gray-100">
       <h1 className="text-3xl font-bold text-gray-800 mb-6 pb-4 border-b border-gray-300">
@@ -294,16 +311,20 @@ export default function AdminDashboardPage() {
         Admin Dashboard
       </h1>
 
-      {/* Summary Cards Section */}
+      {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         <Card className="shadow-md transition-transform duration-200 hover:scale-[1.02]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{isRegistrar ? "Applications You Processed/Assigned" : "Total Applications"}</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {isRegistrar ? "Applications You Processed/Assigned" : "Total Applications"}
+            </CardTitle>
             <Clipboard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-gray-900">{dashboardData.totalApplications}</div>
-            <p className="text-xs text-muted-foreground mt-1">{isRegistrar ? "Applications relevant to you" : "Across all statuses"}</p>
+            <div className="text-3xl font-bold text-gray-900">{dashboard.totalApplications}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {isRegistrar ? "Applications relevant to you" : "Across all statuses"}
+            </p>
           </CardContent>
         </Card>
 
@@ -314,20 +335,20 @@ export default function AdminDashboardPage() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-gray-900">{dashboardData.totalUsers}</div>
+              <div className="text-3xl font-bold text-gray-900">{dashboard.totalUsers}</div>
               <p className="text-xs text-muted-foreground mt-1">All applicants in the system</p>
             </CardContent>
           </Card>
         )}
 
-        {isRegistrar && dashboardData.registeredUsersCountByAdmin !== undefined && (
+        {isRegistrar && dashboard.registeredUsersCountByAdmin !== undefined && (
           <Card className="shadow-md transition-transform duration-200 hover:scale-[1.02]">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Applicants You Registered</CardTitle>
               <UserPlus className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-gray-900">{dashboardData.registeredUsersCountByAdmin}</div>
+              <div className="text-3xl font-bold text-gray-900">{dashboard.registeredUsersCountByAdmin}</div>
               <p className="text-xs text-muted-foreground mt-1">Users registered by your account</p>
             </CardContent>
           </Card>
@@ -340,20 +361,20 @@ export default function AdminDashboardPage() {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-gray-900">{dashboardData.totalAdmins}</div>
+              <div className="text-3xl font-bold text-gray-900">{dashboard.totalAdmins}</div>
               <p className="text-xs text-muted-foreground mt-1">Internal staff accounts</p>
             </CardContent>
           </Card>
         )}
       </div>
 
+      {/* Visualizations */}
       <h2 className="text-2xl font-bold text-gray-700 mb-6 pb-2 border-b border-gray-300">
         <BarChart className="inline-block mr-2 h-5 w-5 text-gray-500" />
         Key Visualizations
       </h2>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-
-        {isRegistrar && dashboardData.applicationsProcessedPerMonth && dashboardData.applicationsProcessedPerMonth.length > 0 && (
+        {isRegistrar && dashboard.applicationsProcessedPerMonth?.length && (
           <Card className="shadow-md">
             <CardHeader>
               <CardTitle>
@@ -364,10 +385,7 @@ export default function AdminDashboardPage() {
             </CardHeader>
             <CardContent className="h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <RechartsBarChart
-                  data={dashboardData.applicationsProcessedPerMonth}
-                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                >
+                <RechartsBarChart data={dashboard.applicationsProcessedPerMonth} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" vertical={false} />
                   <XAxis dataKey="month" tickLine={false} axisLine={{ stroke: '#cccccc' }} tick={{ fill: '#666666', fontSize: 12 }} angle={-45} textAnchor="end" height={50} />
                   <YAxis allowDecimals={false} tickLine={false} axisLine={{ stroke: '#cccccc' }} tick={{ fill: '#666666', fontSize: 12 }} />
@@ -380,12 +398,12 @@ export default function AdminDashboardPage() {
           </Card>
         )}
 
-        {/* 🚀 REPLACED WITH NEW COMPONENT */}
-        {isAdmin && dashboardData.registrationDistribution && dashboardData.registrationDistribution.length > 0 && (
-            <RegistrationDistributionCard distribution={dashboardData.registrationDistribution} />
+        {isAdmin && dashboard.registrationDistribution?.length && (
+          <RegistrationDistributionCard distribution={dashboard.registrationDistribution} />
         )}
       </div>
 
+      {/* Status Distribution */}
       {isAdmin && (
         <>
           <h2 className="text-2xl font-bold text-gray-700 mb-6 pb-2 border-b border-gray-300">
@@ -399,7 +417,7 @@ export default function AdminDashboardPage() {
                 <CardDescription>Current distribution of application statuses.</CardDescription>
               </CardHeader>
               <CardContent>
-                {dashboardData.applicationsByStatus.length > 0 ? (
+                {dashboard.applicationsByStatus.length > 0 ? (
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -408,7 +426,7 @@ export default function AdminDashboardPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {dashboardData.applicationsByStatus.map((item) => (
+                      {dashboard.applicationsByStatus.map((item) => (
                         <TableRow key={item.applicationStatus}>
                           <TableCell>
                             <div className="flex items-center">
@@ -424,9 +442,7 @@ export default function AdminDashboardPage() {
                     </TableBody>
                   </Table>
                 ) : (
-                  <div className="p-4 text-center text-muted-foreground">
-                    No application status data available.
-                  </div>
+                  <div className="p-4 text-center text-muted-foreground">No application status data available.</div>
                 )}
               </CardContent>
             </Card>
@@ -437,7 +453,7 @@ export default function AdminDashboardPage() {
                 <CardDescription>Current distribution of loan application statuses.</CardDescription>
               </CardHeader>
               <CardContent>
-                {dashboardData.loanApplicationsByStatus.length > 0 ? (
+                {dashboard.loanApplicationsByStatus.length > 0 ? (
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -446,7 +462,7 @@ export default function AdminDashboardPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {dashboardData.loanApplicationsByStatus.map((item) => (
+                      {dashboard.loanApplicationsByStatus.map((item) => (
                         <TableRow key={item.loanApplicationStatus}>
                           <TableCell>
                             <div className="flex items-center">
@@ -462,9 +478,7 @@ export default function AdminDashboardPage() {
                     </TableBody>
                   </Table>
                 ) : (
-                  <div className="p-4 text-center text-muted-foreground">
-                    No loan application status data available.
-                  </div>
+                  <div className="p-4 text-center text-muted-foreground">No loan application status data available.</div>
                 )}
               </CardContent>
             </Card>
@@ -472,6 +486,7 @@ export default function AdminDashboardPage() {
         </>
       )}
 
+      {/* Recent Applications */}
       <h2 className="text-2xl font-bold text-gray-700 mb-6 pb-2 border-b border-gray-300">
         <ListOrdered className="inline-block mr-2 h-5 w-5 text-purple-600" />
         Recent Applications
@@ -481,10 +496,8 @@ export default function AdminDashboardPage() {
           <CardDescription>Latest applications submitted or updated.</CardDescription>
         </CardHeader>
         <CardContent>
-          {dashboardData.recentApplications.length === 0 ? (
-            <div className="p-4 text-center text-muted-foreground">
-              No recent applications to display.
-            </div>
+          {dashboard.recentApplications.length === 0 ? (
+            <div className="p-4 text-center text-muted-foreground">No recent applications to display.</div>
           ) : (
             <Table>
               <TableHeader>
@@ -499,7 +512,7 @@ export default function AdminDashboardPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {dashboardData.recentApplications.map((app) => (
+                {dashboard.recentApplications.map((app) => (
                   <TableRow key={app.id}>
                     <TableCell className="font-medium text-gray-900">{app.applicant.fullName}</TableCell>
                     <TableCell>{app.applicant.primaryPhoneNumber}</TableCell>

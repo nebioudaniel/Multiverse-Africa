@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import CustomLoader from "@/components/ui/custom-loader";
 import { DataTable } from "@/components/ui/data-table";
-import { createUserColumns, UserApplicant } from "./columns";
+// FIX: Changed import path from "@/components/admin/users/columns" to "./columns"
+import { createUserColumns, UserApplicant, ClientRole } from "./columns"; 
 
 // Lucide-React Icons
 import {
@@ -30,6 +31,17 @@ import { Input } from "@/components/ui/input";
 // Next.js Link for navigation
 import Link from "next/link";
 
+// Helper function to safely extract an error message
+const getErrorMessage = (err: unknown): string => {
+    if (err instanceof Error) {
+        return err.message;
+    }
+    if (typeof err === 'object' && err !== null && 'message' in err && typeof (err as { message: unknown }).message === 'string') {
+        return (err as { message: string }).message;
+    }
+    return "An unexpected error occurred.";
+}
+
 export default function UserListPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -38,7 +50,14 @@ export default function UserListPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
-
+  
+  // Safely extract current user ID and Role for column actions (like delete permission)
+  const currentUserId = (session?.user as any)?.id as string | undefined;
+  const currentUserRole = ((session?.user as any)?.role as ClientRole) ?? undefined;
+  
+  // Existing role check (for navigation guard)
+  const userRole = currentUserRole ? String(currentUserRole) : "";
+  
   const fetchUsers = useCallback(async (query: string = '') => {
     setIsLoading(true);
     setError(null);
@@ -57,9 +76,10 @@ export default function UserListPage() {
       
       const { data } = await res.json();
       setUsers(data);
-    } catch (err: any) {
-      setError(err.message);
-      toast.error("Error loading applicants", { description: err.message });
+    } catch (err: unknown) { // FIX: Changed 'any' to 'unknown'
+      const errorMessage = getErrorMessage(err);
+      setError(errorMessage);
+      toast.error("Error loading applicants", { description: errorMessage });
     } finally {
       setIsLoading(false);
     }
@@ -68,14 +88,14 @@ export default function UserListPage() {
   useEffect(() => {
     if (status === "loading") return;
 
-    if (!session?.user || !['MAIN_ADMIN', 'REGISTRAR_ADMIN'].includes(session.user.role)) {
-      toast.error("Access Denied", {
-        description: "You do not have permission to view this page.",
-      });
-      router.push("/admin/dashboard");
-      return;
-    }
-
+    if (!session?.user || !["MAIN_ADMIN", "REGISTRAR_ADMIN"].includes(userRole)) {
+         toast.error("Access Denied", {
+           description: "You do not have permission to view this page.",
+         });
+         router.push("/admin/dashboard");
+         return;
+       }
+    // Debounce the fetch request
     const handler = setTimeout(() => {
       fetchUsers(searchQuery);
     }, 500);
@@ -83,14 +103,24 @@ export default function UserListPage() {
     return () => {
       clearTimeout(handler);
     };
-  }, [session, status, router, fetchUsers, searchQuery]);
+  }, [session, status, router, fetchUsers, searchQuery, userRole]); // Added userRole to dependencies
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(event.target.value);
   };
 
-  // Pass the isLoading state to the columns via the `meta` prop.
-  const columns = createUserColumns(session?.user?.id, session?.user?.role);
+  // 1. Create the refetch function to pass to the table's meta
+  const refetchUsers = useCallback(() => fetchUsers(searchQuery), [fetchUsers, searchQuery]);
+
+  // 2. Generate columns with current user context
+  const columns = createUserColumns(currentUserId, currentUserRole);
+
+  // 3. Define the meta object for the table
+  const tableMeta = {
+    isLoading, // Passed to columns for skeleton loading states
+    refetch: refetchUsers, // Passed to column actions (like handleDelete)
+  };
+
 
   // The custom loader is only for the initial page load, not for search.
   if (status === "loading") {
@@ -142,10 +172,11 @@ export default function UserListPage() {
                 />
             </div>
           </div>
-          <DataTable
-            columns={columns}
-            data={isLoading ? [] : users} // Pass an empty array while loading
-            meta={{ isLoading, refetch: () => fetchUsers(searchQuery) }} // Pass isLoading to the meta object
+          {/* FIX: Pass the columns, fetched users data, and the meta object */}
+          <DataTable 
+            columns={columns} 
+            data={users} 
+            meta={tableMeta} 
           />
         </CardContent>
       </Card>

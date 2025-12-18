@@ -1,7 +1,199 @@
 // src/i18n/translations.ts
 import { Locale } from './locales';
 
-// ... (omitted TranslationKeys type for brevity)
+// --- (TranslationKeys type definition remains the same and is correct) ---
+export type TranslationKeys = {
+  navbar: {
+    home: string;
+    language: string;
+  };
+  step1: {
+    title: string;
+    subTitle: string;
+    personalDetails: string;
+    contactDetails: string;
+    addressDetails: string;
+    fill_out_form_description: string;
+    firstName: string;
+    fathersName: string;
+    grandfathersNameOptional: string;
+    primaryPhoneNumber: string;
+    alternativePhoneNumberOptional: string;
+    emailAddressOptional: string;
+    region: string;
+    citySubCity: string;
+    woredaKebele: string;
+    cooperativeDetailsTitle: string;
+    cooperativeDetailsDescription: string;
+    associationName: string;
+    membershipNumber: string;
+    registeringAsBusiness: string;
+    businessEntityDescription: string;
+    businessDetailsTitle: string;
+    tinOptional: string;
+    businessLicenseNo: string;
+    proceedToMinibusDetails: string;
+    checkingUniqueness: string;
+    // --- REQUIRED KEYS ---
+    validationError: string;
+    duplicateEntry: string;
+    networkError: string;
+    eitherPhoneOrEmailRequired: string;
+    // ---------------------
+    validation: {
+      fullNameRequired: string;
+      fatherNameRequired: string;
+      regionRequired: string;
+      cityRequired: string;
+      woredaKebeleRequired: string;
+      invalidPhoneNumber: string;
+      primaryPhoneRequired: string;
+      invalidEmail: string;
+      businessLicenseRequired: string;
+      phoneOrEmailRequired: string;
+    };
+    regionAddisAbaba: string;
+    regionAfar: string;
+    regionAmhara: string;
+    regionBenishangulGumuz: string;
+    regionGambela: string;
+    regionHarari: string;
+    regionOromia: string;
+    regionSidama: string;
+    regionSomali: string;
+    regionSWEPR: string;
+    regionTigray: string;
+    regionCentralEthiopia: string;
+    regionSouthernEthiopia: string;
+    regionDireDawa: string;
+    assocTsehay: string;
+    assocZebra: string;
+    assocAdissHywet: string;
+    assocNser: string;
+    assocBelen: string;
+    assocMetebaber: string;
+    assocBelechta: string;
+    assocWalta: string;
+    assocgohe: string;
+    assocberhutesfa: string;
+    assocselamta: string;
+    assocfeker: string;
+    assocTla: string;
+    assocOther: string;
+  };
+  step2: {
+    title: string;
+    subTitle: string;
+    fillOutVehicleInfo: string;
+    vehicleDetails: string;
+    preferredVehicleType: string;
+    quantityRequested: string;
+    intendedUse: string;
+    intendedUsePlaceholder: string;
+    intendedUseNone: string;
+    programAgreement: string;
+    digitalSignature: string;
+    digitalSignaturePlaceholder: string;
+    agreedToTerms: string;
+    viewTermsAndConditions: string;
+    backToApplicantInfo: string;
+    submitRegistration: string;
+    selectThisVehicle: string;
+    selected: string;
+    chooseOtherOption: string;
+    registrationSuccessful: string;
+    yourApplicationSubmitted: string;
+    registrationFailed: string;
+    unexpectedError: string;
+    unexpectedErrorOccurred: string;
+    validationError: string;
+    cannotProceed: string;
+    useCity: string;
+    useIntercity: string;
+    useTourCharter: string;
+    useStaffTransport: string;
+    useOther: string;
+    category: {
+        minibus: string;
+        truck: string;
+    };
+    vehicles: { 
+        model15Plus1Seater: string; 
+        desc15Plus1Seater: string; 
+        model18Seater: string; 
+        desc18Seater: string; 
+        model22Plus1Seater: string; 
+        desc22Plus1Seater: string; 
+        modelShacmanDump: string;
+        descShacmanDump: string;
+        modelShacmanTractor: string;
+        descShacmanTractor: string;
+        modelShacmanMixer: string;
+        descShacmanMixer: string;
+    };
+    validation: {
+      vehicleTypeRequired: string;
+      quantityWholeNumber: string;
+      quantityMin: string;
+      quantityMax: string; 
+      signatureRequired: string;
+      agreeToTerms: string;
+    };
+  };
+  thanks: {
+    registrationComplete: string;
+    thankYouSubmissionRecorded: string;
+    yourSubmittedDetails: string;
+    applicantID: string;
+    fullName: string;
+    fathersName: string;
+    grandfathersName: string;
+    businessInformation: string;
+    registeringAsBusiness: string;
+    tin: string;
+    businessLicenseNo: string;
+    contactLocation: string;
+    primaryPhone: string;
+    alternativePhone: string;
+    emailAddress: string;
+    region: string;
+    citySubCity: string;
+    woredaKebele: string;
+    cooperativeAssociationDetails: string;
+    associationName: string;
+    membershipNumber: string;
+    minibusDetails: string;
+    preferredVehicleType: string;
+    vehicleQuantity: string;
+    intendedUse: string;
+    programAgreement: string;
+    digitalSignature: string;
+    agreedToTerms: string;
+    viewSignature: string;
+    goToHomepage: string;
+    printApplication: string;
+    forYourRecords: string;
+    noDataFoundTitle: string;
+    noDataFoundMessage: string;
+    noDataFoundInstructions: string;
+    yes: string;
+    no: string;
+    personalInfo: string; 
+    applicationDetails: string; 
+    isBusiness: string; 
+    preferredVehicle: string; 
+    quantity: string; 
+    dataLoaded: string;
+    yourDetailsHaveBeenLoaded: string;
+    dataLoadFailed: string;
+    dataLoadFailedDescription: string;
+    loading: string;
+    contactSupport: string;
+    helpCenter: string;
+    na: string;
+    downloadPDF: string;
+  };
+};
 
 const translations: Record<Locale, TranslationKeys> = {
   am: {
@@ -11,7 +203,7 @@ const translations: Record<Locale, TranslationKeys> = {
       language: 'ቋንቋ',
     },
     step1: {
-      // ... (omitted step1 keys for brevity)
+      // ... (existing keys)
       title: 'አመልካች መረጃ',
       subTitle: '(ደረጃ 1 ከ 2)',
       personalDetails: 'የግል መረጃ',
@@ -38,9 +230,12 @@ const translations: Record<Locale, TranslationKeys> = {
       businessLicenseNo: 'የንግድ ፈቃድ ቁጥር',
       proceedToMinibusDetails: 'ወደ ሚኒባስ ዝርዝሮች ይቀጥሉ',
       checkingUniqueness: 'ልዩነት በመፈተሽ ላይ...',
+      // --- MISSING AMHARIC VALUES ADDED HERE ---
+      validationError: 'የማረጋገጫ ስህተት', 
       duplicateEntry: 'የተደጋገመ ግቤት',
       networkError: 'የአውታረ መረብ ስህተት',
       eitherPhoneOrEmailRequired: 'ዋና ስልክ ቁጥር ወይም ኢሜል አድራሻ ያስፈልጋል።',
+      // ------------------------------------------
       validation: {
         fullNameRequired: 'እባክዎ የመጀመሪያ ስምዎን ያስገቡ',
         fatherNameRequired: 'እባክዎ የአባትዎን ስም ያስገቡ',
@@ -204,7 +399,7 @@ const translations: Record<Locale, TranslationKeys> = {
       language: 'Language',
     },
     step1: {
-      // ... (omitted step1 keys for brevity)
+      // ... (existing keys)
       title: 'Applicant Information',
       subTitle: '(Step 1 of 2)',
       personalDetails: 'Personal Details',
@@ -231,10 +426,12 @@ const translations: Record<Locale, TranslationKeys> = {
       businessLicenseNo: 'Business License No.',
       proceedToMinibusDetails: 'Proceed to Minibus Details',
       checkingUniqueness: 'Checking Uniqueness...',
+      // --- ENGLISH VALUES ARE ALREADY HERE ---
       validationError: 'Validation Error',
       duplicateEntry: 'Duplicate Entry',
       networkError: 'Network Error',
       eitherPhoneOrEmailRequired: 'Either Primary Phone Number or Email Address is required.',
+      // ---------------------------------------
       validation: {
         fullNameRequired: 'Full Name is required',
         fatherNameRequired: 'Father\'s Name is required',
@@ -326,71 +523,70 @@ const translations: Record<Locale, TranslationKeys> = {
           descShacmanTractor: 'Frame: Built with Q345B high-strength steel and automated arc welding for maximum load-bearing capacity. Running Gear: Features reliable, well-known brand axles and suspension for guaranteed performance.Offer: Available as customizable cargo trailers..',
           modelShacmanMixer: 'Shacman Water and Oil Truck',
           descShacmanMixer: 'The F3000 Series, introduced in 2009, is one of our best-selling products—reliable, rugged, and powerful enough for any task. Cab: Spacious and bright cab equipped with an air-suspension seat and high-tech design for maximum safety and comfort. Engine: Power comes from an optional Weichai or Cummins engine (180–560 HP, 6L–13L displacement). Gearbox: Features a Fast Gearbox with 9, 10, or 12 speeds to meet diverse operational needs.',
+        },
+        validation: {
+          vehicleTypeRequired: 'Please select your preferred vehicle type.',
+          quantityWholeNumber: 'Vehicle quantity must be a whole number.',
+          quantityMin: 'You must request at least 1 vehicle.',
+          quantityMax: 'The maximum quantity is 100 vehicles.',
+          signatureRequired: 'A digital signature is required.',
+          agreeToTerms: 'You must agree to the Terms and Conditions to proceed.',
+        },
       },
-      validation: {
-        vehicleTypeRequired: 'Please select your preferred vehicle type.',
-        quantityWholeNumber: 'Vehicle quantity must be a whole number.',
-        quantityMin: 'You must request at least 1 vehicle.',
-        quantityMax: 'The maximum quantity is 100 vehicles.',
-        signatureRequired: 'A digital signature is required.',
-        agreeToTerms: 'You must agree to the Terms and Conditions to proceed.',
+      thanks: {
+        registrationComplete: 'Registration Complete!',
+        thankYouSubmissionRecorded: 'Thank you for your submission. Your details have been recorded.',
+        yourSubmittedDetails: 'Your Submitted Details',
+        applicantID: 'Applicant ID',
+        fullName: 'Full Name',
+        fathersName: 'Father\'s Name',
+        grandfathersName: 'Grandfather\'s Name',
+        businessInformation: 'Business Information',
+        registeringAsBusiness: 'Registering as Business',
+        tin: 'TIN',
+        businessLicenseNo: 'Business License No.',
+        contactLocation: 'Contact & Location',
+        primaryPhone: 'Primary Phone',
+        alternativePhone: 'Alternative Phone',
+        emailAddress: 'Email Address',
+        region: 'Region',
+        citySubCity: 'City/Sub-City',
+        woredaKebele: 'Woreda / Kebele',
+        cooperativeAssociationDetails: 'Cooperative / Association Details',
+        associationName: 'Association Name',
+        membershipNumber: 'Membership Number',
+        minibusDetails: 'Minibus Details',
+        preferredVehicleType: 'Preferred Vehicle Type',
+        vehicleQuantity: 'Vehicle Quantity',
+        intendedUse: 'Intended Use',
+        programAgreement: 'Program Agreement',
+        digitalSignature: 'Digital Signature',
+        agreedToTerms: 'Agreed to Terms',
+        viewSignature: 'View Signature',
+        goToHomepage: 'Go to Homepage',
+        printApplication: 'Print Application',
+        forYourRecords: 'For your records, please print this page or take a screenshot.',
+        noDataFoundTitle: 'No Registration Data Found',
+        noDataFoundMessage: 'It looks like you\'ve accessed this page directly or your session has expired.',
+        noDataFoundInstructions: 'Please go back to the registration form to submit your details.',
+        yes: 'Yes',
+        no: 'No',
+        personalInfo: 'Applicant Details', 
+        applicationDetails: 'Application Details', 
+        isBusiness: 'Registering as Business?', 
+        preferredVehicle: 'Preferred Vehicle Type', 
+        quantity: 'Quantity Requested', 
+        dataLoaded: 'Data Loaded', 
+        yourDetailsHaveBeenLoaded: 'Your submitted details have been loaded successfully.', 
+        dataLoadFailed: 'Data Load Failed', 
+        dataLoadFailedDescription: 'Could not retrieve application data. Please try refreshing.', 
+        loading: 'Loading Application Data...', 
+        contactSupport: 'Contact Support', 
+        helpCenter: 'Help Center', 
+        na: 'N/A',
+        downloadPDF: 'Download as PDF', 
       },
     },
-    thanks: {
-      registrationComplete: 'Registration Complete!',
-      thankYouSubmissionRecorded: 'Thank you for your submission. Your details have been recorded.',
-      yourSubmittedDetails: 'Your Submitted Details',
-      applicantID: 'Applicant ID',
-      fullName: 'Full Name',
-      fathersName: 'Father\'s Name',
-      grandfathersName: 'Grandfather\'s Name',
-      businessInformation: 'Business Information',
-      registeringAsBusiness: 'Registering as Business',
-      tin: 'TIN',
-      businessLicenseNo: 'Business License No.',
-      contactLocation: 'Contact & Location',
-      primaryPhone: 'Primary Phone',
-      alternativePhone: 'Alternative Phone',
-      emailAddress: 'Email Address',
-      region: 'Region',
-      citySubCity: 'City/Sub-City',
-      woredaKebele: 'Woreda / Kebele',
-      cooperativeAssociationDetails: 'Cooperative / Association Details',
-      associationName: 'Association Name',
-      membershipNumber: 'Membership Number',
-      minibusDetails: 'Minibus Details',
-      preferredVehicleType: 'Preferred Vehicle Type',
-      vehicleQuantity: 'Vehicle Quantity',
-      intendedUse: 'Intended Use',
-      programAgreement: 'Program Agreement',
-      digitalSignature: 'Digital Signature',
-      agreedToTerms: 'Agreed to Terms',
-      viewSignature: 'View Signature',
-      goToHomepage: 'Go to Homepage',
-      printApplication: 'Print Application',
-      forYourRecords: 'For your records, please print this page or take a screenshot.',
-      noDataFoundTitle: 'No Registration Data Found',
-      noDataFoundMessage: 'It looks like you\'ve accessed this page directly or your session has expired.',
-      noDataFoundInstructions: 'Please go back to the registration form to submit your details.',
-      yes: 'Yes',
-      no: 'No',
-      personalInfo: 'Applicant Details', 
-      applicationDetails: 'Application Details', 
-      isBusiness: 'Registering as Business?', 
-      preferredVehicle: 'Preferred Vehicle Type', 
-      quantity: 'Quantity Requested', 
-      dataLoaded: 'Data Loaded', 
-      yourDetailsHaveBeenLoaded: 'Your submitted details have been loaded successfully.', 
-      dataLoadFailed: 'Data Load Failed', 
-      dataLoadFailedDescription: 'Could not retrieve application data. Please try refreshing.', 
-      loading: 'Loading Application Data...', 
-      contactSupport: 'Contact Support', 
-      helpCenter: 'Help Center', 
-      na: 'N/A',
-      // <<< ADDED NEW KEY HERE >>>
-      downloadPDF: 'Download as PDF', 
-    },
-  },
-};
+}; 
 
 export default translations;

@@ -1,14 +1,12 @@
-// next.config.js
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  typescript: {
-    ignoreBuildErrors: true, // You might remove this after development
+import type { NextConfig } from 'next';
+
+const nextConfig: NextConfig = {
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb',
+    },
   },
-  eslint: {
-    ignoreDuringBuilds: true, // You might remove this after development
-  },
-  // Add this to transpile uploadthing packages
-  transpilePackages: ["uploadthing", "@uploadthing/react"],
+  // No `api` object at all
 };
 
-module.exports = nextConfig;
+export default nextConfig;

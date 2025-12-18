@@ -88,7 +88,7 @@ function Sidebar() {
             <span className="text-yellow-600"> Multiverse Minibus & Truck Registration</span>!
           </h1>
           <h2 className="text-xl text-gray-600 mb-8">
-            Let's get you registered quickly and easily!
+            Let&apos; get you registered quickly and easily!
           </h2>
         </div>
         <div className="space-y-6">
@@ -126,6 +126,78 @@ function Sidebar() {
   );
 }
 
+// --- DataRow Props Definition ---
+interface DataRowProps {
+  icon: React.ElementType; // The component itself (e.g., User, Phone)
+  label: string;
+  value: string | number | boolean | undefined | null;
+}
+
+// --- DataRow Component ---
+// FIX: Using the explicit DataRowProps interface
+function DataRow({ icon: Icon, label, value }: DataRowProps) {
+    const { t } = useTranslation();
+    
+    // Check for empty/null/undefined/NaN values
+    const isValueEmpty =
+      value === undefined ||
+      value === null ||
+      (typeof value === "string" && value.trim() === "") ||
+      (typeof value === "number" && isNaN(value));
+
+    // Determine the display value (N/A or translated boolean)
+    const displayValue = isValueEmpty
+      ? t("thanks.na") // Use the N/A translation key
+      : typeof value === "boolean"
+      ? value
+        ? t("thanks.yes")
+        : t("thanks.no")
+      : value;
+
+    // Special handling for Digital Signature URL
+    if (label === t("thanks.digitalSignature") && !isValueEmpty) {
+      return (
+        <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-zinc-800">
+          <div className="flex items-center space-x-3">
+            <span className="text-sm font-light text-gray-600 dark:text-zinc-400">
+              {label}:
+            </span>
+          </div>
+          {/* Only show the link if the value is a valid URL string, otherwise show N/A or actual text */}
+          {typeof value === "string" && value.startsWith("http") ? (
+            <a
+              href={value}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm font-medium text-blue-600 hover:underline transition-colors print:hidden" // Hide link on print
+            >
+              {t("thanks.viewSignature")}
+            </a>
+          ) : (
+            <span className="text-sm font-medium text-gray-900 dark:text-zinc-100 print:text-xs">
+                {displayValue} {/* Show actual text if not a URL/N/A */}
+            </span>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-zinc-800">
+        <div className="flex items-center space-x-3">
+          <span className="text-sm font-light text-gray-600 dark:text-zinc-400">
+            {label}:
+          </span>
+        </div>
+        <span className="text-sm font-medium text-gray-900 dark:text-zinc-100 print:text-xs">
+          {displayValue}
+        </span>
+      </div>
+    );
+  };
+// --- End DataRow Component ---
+
+
 export default function ThankYouPage() {
   const searchParams = useSearchParams();
   const params = useParams();
@@ -145,6 +217,7 @@ export default function ThankYouPage() {
       }
 
       try {
+        // NOTE: Assuming /api/user/[id] route handler is fixed from previous attempts
         const response = await fetch(`/api/user/${id}`);
         if (!response.ok) throw new Error("Failed to fetch user data");
         const data: ThankYouPageData = await response.json();
@@ -179,75 +252,6 @@ export default function ThankYouPage() {
     }
   };
 
-  const DataRow = ({
-    icon: Icon,
-    label,
-    value,
-  }: {
-    icon: any;
-    label: string;
-    value: string | number | boolean | undefined | null;
-  }) => {
-    
-    // Check for empty/null/undefined/NaN values
-    const isValueEmpty =
-      value === undefined ||
-      value === null ||
-      (typeof value === "string" && value.trim() === "") ||
-      (typeof value === "number" && isNaN(value));
-
-    // Determine the display value (N/A or translated boolean)
-    const displayValue = isValueEmpty
-      ? t("thanks.na") // Use the N/A translation key
-      : typeof value === "boolean"
-      ? value
-        ? t("thanks.yes")
-        : t("thanks.no")
-      : value;
-
-    // Special handling for Digital Signature URL
-    if (label === t("thanks.digitalSignature") && !isValueEmpty) {
-      return (
-        <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-zinc-800">
-          <div className="flex items-center space-x-3">
-            <Icon className="h-4 w-4 text-gray-400 dark:text-zinc-600" />
-            <span className="text-sm font-light text-gray-600 dark:text-zinc-400">
-              {label}:
-            </span>
-          </div>
-          {/* Only show the link if the value is a valid URL string, otherwise show N/A or actual text */}
-          {typeof value === "string" && value.startsWith("http") ? (
-            <a
-              href={value}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm font-medium text-blue-600 hover:underline transition-colors print:hidden" // Hide link on print
-            >
-              {t("thanks.viewSignature")}
-            </a>
-          ) : (
-            <span className="text-sm font-medium text-gray-900 dark:text-zinc-100 print:text-xs">
-                {displayValue} {/* Show actual text if not a URL/N/A */}
-            </span>
-          )}
-        </div>
-      );
-    }
-
-    return (
-      <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-zinc-800">
-        <div className="flex items-center space-x-3">
-          <Icon className="h-4 w-4 text-gray-400 dark:text-zinc-600" />
-          <span className="text-sm font-light text-gray-600 dark:text-zinc-400">
-            {label}:
-          </span>
-        </div>
-        <span className="text-sm font-medium text-gray-900 dark:text-zinc-100 print:text-xs">
-          {displayValue}
-        </span>
-      </div>
-    );
-  };
 
   if (loading) {
     return (
@@ -372,7 +376,7 @@ export default function ThankYouPage() {
                 <div className="space-y-2">
                     <DataRow
                       icon={Building2}
-                     label={t("thanks.associationName")} // <--- The correct label
+                     label={t("thanks.associationName")}
                       value={userData.associationName}
                     />
                     <DataRow
