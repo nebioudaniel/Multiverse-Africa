@@ -110,7 +110,7 @@ export async function GET() {
 // ----------------------------------------------------------------------
 export async function PUT(request: Request) {
   try {
-    const session = await auth();
+     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id || !session.user.role) {
       return new NextResponse(JSON.stringify({ message: "Unauthorized: Missing session data" }), { status: 401 });

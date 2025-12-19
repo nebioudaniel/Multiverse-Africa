@@ -130,7 +130,7 @@ export async function GET(request: Request) {
  */
 export async function POST(request: Request) {
   try {
-    const session = await auth();
+    const session = await getServerSession(authOptions);
     const body = await request.json();
     const validated = createUserSchema.safeParse(body);
 

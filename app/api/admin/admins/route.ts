@@ -122,7 +122,7 @@ export async function GET(request: Request) {
  */
 export async function POST(request: Request) {
   try {
-    const session = await auth();
+     const session = await getServerSession(authOptions);
 
     if (!session || !session.user || session.user.role !== 'MAIN_ADMIN') {
       return new NextResponse(JSON.stringify({ message: 'Unauthorized' }), { status: 401 });

@@ -128,7 +128,7 @@ export const PATCH = async (
 ) => {
   try {
     const { id } = await params;
-    const session = await auth();
+    const session = await getServerSession(authOptions);
 
     if (
       !session?.user ||
@@ -238,7 +238,7 @@ export const DELETE = async (
 ) => {
   try {
     const { id } = await params;
-    const session = await auth();
+     const session = await getServerSession(authOptions);
 
     if (!session?.user || session.user.role !== 'MAIN_ADMIN') {
       return NextResponse.json({ message: 'Unauthorized: Only Main Admins can delete users.' }, { status: 401 });

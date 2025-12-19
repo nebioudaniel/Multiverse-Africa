@@ -159,7 +159,7 @@ export async function GET(request: Request) {
 // ======================================================
 export async function PATCH(request: Request) {
   try {
-    const session = await auth();
+     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
       return NextResponse.json(

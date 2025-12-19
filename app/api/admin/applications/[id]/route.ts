@@ -142,7 +142,7 @@ export const PUT = async (
 ) => {
   try {
     const { id } = await params;
-    const session = await auth();
+     const session = await getServerSession(authOptions);
 
     // FIX: Use type assertion for session.user.role
     const userRole = (session?.user?.role as string);
@@ -263,7 +263,7 @@ export const DELETE = async (
 ) => {
   try {
     const { id } = await params;
-    const session = await auth();
+    const session = await getServerSession(authOptions);
 
     // FIX: Use type assertion for session.user.role
     if (!session?.user || (session.user.role as string) !== 'MAIN_ADMIN') {

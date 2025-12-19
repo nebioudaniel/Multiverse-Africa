@@ -1,7 +1,7 @@
 // lib/auth.ts
 import NextAuth from "next-auth/next"; // 👈 Change this line
 import CredentialsProvider from "next-auth/providers/credentials";
-import prisma from "@/lib/prisma";
+import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 
 // Use : any to bypass the "No exported member" build errors
