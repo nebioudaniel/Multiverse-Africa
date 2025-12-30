@@ -9,6 +9,7 @@ import {
   UserCog,
   User,
   Mail,
+  Car,
   LogOut,
   Activity,
   ListChecks,
@@ -51,7 +52,9 @@ const ALL_FLAT_NAV_ITEMS: NavItem[] = [
   // 5. Contact
   { title: "Contact", href: "/admin/contact", icon: Mail, iconColor: "text-blue-500", roles: ['MAIN_ADMIN'], order: 5 },
   // 6. Profile
-  { title: "Profile", href: "/admin/profile", icon: User, iconColor: "text-blue-500", roles: ['MAIN_ADMIN', 'REGISTRAR_ADMIN'], order: 6 },
+  { title: "Vehicles", href: "/admin/vehicles", icon: Car, iconColor: "text-blue-500", roles: ['MAIN_ADMIN'], order: 6 },
+
+  { title: "Profile", href: "/admin/profile", icon: User, iconColor: "text-blue-500", roles: ['MAIN_ADMIN', 'REGISTRAR_ADMIN'], order: 7 },
 ];
 
 // Reusable component for a single Nav Link

@@ -6,7 +6,16 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '10mb',
     },
   },
-  // No `api` object at all
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'files.edgestore.dev',
+        port: '',
+        pathname: '/**',
+      },
+    ],
+  },
 };
 
 export default nextConfig;

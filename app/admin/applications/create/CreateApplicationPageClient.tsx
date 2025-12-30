@@ -47,8 +47,10 @@ import {
   UserRound,
   Target,
   Gavel,
+  Truck,
   Signature,
   XCircle,
+  Bus,
 } from "lucide-react";
 import { Combobox } from "@/components/ui/combobox";
 import { ComboboxSearch } from "@/components/ui/combobox-search";
@@ -133,12 +135,7 @@ licenseCategory: z.enum(
   }
 ),
 // Vehicle Details
-vehicleType: z.enum(
-  ["Diesel_Minibus", "Electric_Minibus", "Electric_Mid_Bus_21_1", "Traditional_Minibus"] as const,
-  {
-    error: "Please select a vehicle type.",
-  }
-),
+vehicleType: z.string().min(1, { message: "Please select a vehicle from the catalog." }),
 
   quantityRequested: z.coerce.number()
     .min(1, { message: "Quantity must be at least 1." })
@@ -292,6 +289,7 @@ const EdgeStoreField = ({
     }
   };
 
+  
   return (
     <div className="mb-4 border p-3 rounded-lg bg-gray-50">
       <Label className="text-sm font-medium mb-1 block">{label}</Label>
@@ -380,6 +378,22 @@ export default function CreateApplicationPageClient() {
   const [apiError, setApiError] = useState<string | null>(null);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const [showOtherInstitutionInput, setShowOtherInstitutionInput] = useState(false);
+const [catalogVehicles, setCatalogVehicles] = useState<any[]>([]);
+
+  // Effect to fetch the vehicles from your API
+  useEffect(() => {
+    const fetchCatalog = async () => {
+      try {
+        const res = await fetch('/api/vehicles');
+        const data = await res.json();
+        setCatalogVehicles(data);
+      } catch (error) {
+        console.error("Error loading vehicle catalog:", error);
+      }
+    };
+    fetchCatalog();
+  }, []);
+
 
   // === START: UploadThing State ===
   const [isUploading, setIsUploading] = useState(false); // Global state to track if UploadThing is actively uploading
@@ -1231,52 +1245,33 @@ const form = useForm<FormSchema>({
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
-                control={form.control}
-                name="vehicleType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Vehicle Type</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger><SelectValue placeholder="Select vehicle type" /></SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Diesel_Minibus">Diesel_Minibus</SelectItem>
-                        <SelectItem value="Electric_Minibus">Electric_Minibus</SelectItem>
-                        <SelectItem value="Electric_Mid_Bus_21_1">Electric_Mid_Bus_21_1</SelectItem>
-                        <SelectItem value="Traditional_Minibus">Traditional_Minibus</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="quantityRequested"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Quantity Requested</FormLabel>
-                    {/* Ensure value is number for min/max to work, or use custom validation */}
-                    <FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value))} min={1} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="intendedUse"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Intended Use (Optional)</FormLabel>
-                    <FormControl><Input {...field} value={field.value || ''} /></FormControl>
-                    <FormDescription>
-                      e.g., Staff Transport, Tour / Charter, Public Transport
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+  control={form.control}
+  name="vehicleType"
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel>Vehicle Type</FormLabel>
+      <Select onValueChange={field.onChange} value={field.value || ""}>
+        <FormControl>
+          <SelectTrigger>
+            <SelectValue placeholder={catalogVehicles.length > 0 ? "Choose a vehicle..." : "Loading fleet..."} />
+          </SelectTrigger>
+        </FormControl>
+        <SelectContent>
+          {catalogVehicles.map((v) => (
+            <SelectItem key={v.id} value={v.name}>
+              <div className="flex items-center gap-2">
+                {v.type === 'truck' ? <Truck className="h-4 w-4 text-orange-500" /> : <Bus className="h-4 w-4 text-emerald-500" />}
+                <span>{v.name}</span>
+                <span className="text-[10px] text-muted-foreground ml-2">({v.capacity})</span>
+              </div>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
             </div>
           </div>
 

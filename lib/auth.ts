@@ -3,6 +3,7 @@ import NextAuth from "next-auth/next"; // 👈 Change this line
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import bcrypt from "bcryptjs";
+import prisma  from "@/lib/prisma";
 
 // Use : any to bypass the "No exported member" build errors
 export const authOptions: any = {
@@ -26,8 +27,8 @@ export const authOptions: any = {
         if (!email || !password) return null;
 
         const admin = await prisma.admin.findUnique({
-          where: { email: email },
-        });
+  where: { email },
+});
 
         if (!admin || !admin.passwordHash) return null;
 

@@ -207,41 +207,41 @@ export default function ThankYouPage() {
   const toastShownRef = useRef(false);
   const { t } = useTranslation();
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      const id = searchParams?.get("id");
-      if (!id) {
-        setUserData(null);
-        setLoading(false);
-        return;
-      }
+ useEffect(() => {
+  const id = searchParams?.get("id"); // read once
+  if (!id) {
+    setUserData(null);
+    setLoading(false);
+    return;
+  }
 
-      try {
-        // NOTE: Assuming /api/user/[id] route handler is fixed from previous attempts
-        const response = await fetch(`/api/user/${id}`);
-        if (!response.ok) throw new Error("Failed to fetch user data");
-        const data: ThankYouPageData = await response.json();
-        setUserData(data);
+  const fetchUserData = async () => {
+    try {
+      const response = await fetch(`/api/user/${id}`);
+      if (!response.ok) throw new Error("Failed to fetch user data");
+      const data: ThankYouPageData = await response.json();
+      setUserData(data);
 
-        if (!toastShownRef.current) {
-          toast.success(t("thanks.dataLoaded"), {
-            description: t("thanks.yourDetailsHaveBeenLoaded"),
-          });
-          toastShownRef.current = true;
-        }
-      } catch (err) {
-        console.error(err);
-        toast.error(t("thanks.dataLoadFailed"), {
-          description: t("thanks.dataLoadFailedDescription"),
+      if (!toastShownRef.current) {
+        toast.success(t("thanks.dataLoaded"), {
+          description: t("thanks.yourDetailsHaveBeenLoaded"),
         });
-        setUserData(null);
-      } finally {
-        setLoading(false);
+        toastShownRef.current = true;
       }
-    };
+    } catch (err) {
+      console.error(err);
+      toast.error(t("thanks.dataLoadFailed"), {
+        description: t("thanks.dataLoadFailedDescription"),
+      });
+      setUserData(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchUserData();
-  }, [searchParams, t]);
+  fetchUserData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
 
   const handlePrint = () => {
     if (typeof window !== "undefined") {

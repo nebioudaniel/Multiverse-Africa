@@ -1,5 +1,5 @@
-import { initEdgeStore } from '@edgestore/server';
-import { createEdgeStoreNextHandler } from '@edgestore/server/adapters/next/app';
+import { initEdgeStore } from "@edgestore/server";
+import { createEdgeStoreNextHandler } from "@edgestore/server/adapters/next/app";
 
 const es = initEdgeStore.create();
 
@@ -8,6 +8,9 @@ export const edgeStoreRouter = es.router({
     maxSize: 30 * 1024 * 1024, // 30MB
   }),
 });
+
+// 👇 Export the type for frontend
+export type EdgeStoreRouter = typeof edgeStoreRouter;
 
 export const handler = createEdgeStoreNextHandler({
   router: edgeStoreRouter,

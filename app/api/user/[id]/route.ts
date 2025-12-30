@@ -1,12 +1,17 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-// @ts-expect-error - Next.js route handler context type is intentionally untyped
-export async function GET(req, { params }) {
-  const id = params.id;
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
 
   if (!id) {
-    return NextResponse.json({ message: "Missing id" }, { status: 400 });
+    return NextResponse.json(
+      { message: "Missing id" },
+      { status: 400 }
+    );
   }
 
   try {
@@ -36,12 +41,15 @@ export async function GET(req, { params }) {
     });
 
     if (!user) {
-      return NextResponse.json({ message: "User not found" }, { status: 404 });
+      return NextResponse.json(
+        { message: "User not found" },
+        { status: 404 }
+      );
     }
 
     return NextResponse.json(user);
   } catch (error) {
-    console.error(error);
+    console.error("GET /api/user/[id] error:", error);
     return NextResponse.json(
       { message: "Internal Server Error" },
       { status: 500 }

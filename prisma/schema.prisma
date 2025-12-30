@@ -176,7 +176,7 @@ model Application {
 
 
   // Vehicle Details
-  vehicleType                   VehicleType
+  vehicleType      String
   quantityRequested             Int
   intendedUse                   String?
 
@@ -266,4 +266,14 @@ model ContactMessage {
   message      String
   isRead       Boolean   @default(false)
   createdAt    DateTime  @default(now())
+}
+model Vehicle {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  capacity    String
+  type        String
+  images      String[] // For Edge Store URLs
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

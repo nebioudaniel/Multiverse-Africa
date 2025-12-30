@@ -55,10 +55,8 @@ const createApplicationSchema = z.object({
   }),
 
   // Vehicle Details (on Application Model)
-  vehicleType: z.enum(["Diesel_Minibus", "Electric_Minibus", "Electric_Mid_Bus_21_1", "Traditional_Minibus"], { 
-    // ✅ FIX 2: Change required_error to message for z.enum() compatibility
-    message: "Vehicle type is required and must be one of the specified types." 
-  }),
+ // Now accepts any vehicle name from your Catalog
+  vehicleType: z.string().min(1, "Vehicle type is required from the catalog."),
   
   quantityRequested: z.number().int().min(1, "Quantity must be at least 1."),
   intendedUse: z.string().nullable().optional(),

@@ -53,7 +53,8 @@ const applicationUpdateSchema = z.object({
   driverLicenseNo: z.string().nullish(),
   licenseCategory: z.enum(['A', 'B', 'C', 'D', 'E']).optional().nullable(),
 
-  vehicleType: z.enum(['Diesel_Minibus', 'Electric_Minibus', 'Electric_Mid_Bus_21_1', 'Traditional_Minibus']).optional().nullable(),
+  // This now allows any vehicle name coming from your database
+vehicleType: z.string().optional().nullable(),
   quantityRequested: z.coerce.number().min(0).max(100).optional(),
   intendedUse: z.string().nullish(),
 
