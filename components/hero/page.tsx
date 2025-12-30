@@ -36,7 +36,7 @@ const App = () => {
 
           {/* Call-to-action buttons */}
           <div className="flex flex-wrap gap-3 justify-center lg:justify-start">
-            <a href="#">
+            <a href="/contact">
               <button
                 className="inline-flex items-center justify-center rounded-full text-sm sm:text-base font-medium h-10 px-5 bg-white text-blue-700 border border-blue-200 hover:bg-blue-50 hover:shadow-md transition-all duration-300 shadow-sm"
               >
