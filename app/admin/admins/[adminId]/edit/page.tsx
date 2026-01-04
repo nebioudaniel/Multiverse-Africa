@@ -1,7 +1,8 @@
 //@ts-nocheck
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
+
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useForm } from "react-hook-form";
@@ -59,12 +60,13 @@ interface AdminData {
 }
 
 // FIX: Using 'any' in the function signature to bypass the Next.js/TS constraint error
-export default function EditAdminPage({ params }: any) { 
+export default function EditAdminPage({ params }: { params: Promise<{ adminId: string }> }) {
+  const { adminId } = use(params);
+
   const { data: session, status } = useSession();
   const router = useRouter();
-  
+
   // FIX: Cast params to the correct type immediately for safety within the function
-  const { adminId } = params as EditAdminPageProps['params']; 
 
   const [isLoading, setIsLoading] = useState(true);
   const [adminData, setAdminData] = useState<AdminData | null>(null);
