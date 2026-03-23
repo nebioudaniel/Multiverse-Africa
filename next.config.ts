@@ -16,6 +16,16 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // --- ADD THIS REDIRECTS BLOCK ---
+  async redirects() {
+    return [
+      {
+        source: '/webmail',
+        destination: 'https://s16193.lon1.stableserver.net:2096',
+        permanent: true,
+      },
+    ]
+  },
 };
 
 export default nextConfig;
