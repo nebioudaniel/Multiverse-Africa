@@ -41,8 +41,7 @@ If you are developing the digital platform for Multiverse Africa, this repositor
 3.  **Set up Environment Variables:**
     Create a `.env` file and add your database and Chapa API keys:
     ```env
-    DATABASE_URL="your_database_url"
-    CHAPA_SECRET_KEY="your_chapa_key"
+   
     ```
 4.  **Run the development server:**
     ```bash
