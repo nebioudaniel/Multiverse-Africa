@@ -1,36 +1,66 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Multiverse Africa - Trade Without Borders
 
-## Getting Started
+**Multiverse Africa** is a diversified Ethiopian enterprise group established in 2000. We are dedicated to shaping the nation's economic transformation by integrating local strength with international reach across industry, real estate, trade finance, and electronics.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 🚀 Core Business Areas
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+* **Trade & Finance:** Leading providers of innovative financial solutions and global trade partnerships.
+* **Industrial & Vehicle Assembly:** Driving Ethiopia’s transition to green mobility through local manufacturing.
+* **Global Trading & Logistics:** Connecting Ethiopia to international markets and securing essential raw materials.
+* **Strategic Partnerships:** Collaborating with global stakeholders (ATG, ATEX, PAPSS) to foster a collaborative ecosystem.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🏢 Group Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Company | Specialization |
+| :--- | :--- |
+| **Multiverse Enterprise PLC** | Vehicle assembly, real estate, and flagship group operations. |
+| **Multiverse Trading PLC** | International imports/exports and commodity promotion. |
+| **Multiverse Electronics PLC** | Consumer electronics, IT solutions, and EV charging infrastructure. |
 
-## Learn More
+## 🛠 Tech Stack (Project Website)
 
-To learn more about Next.js, take a look at the following resources:
+If you are developing the digital platform for Multiverse Africa, this repository uses:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+* **Frontend:** Next.js, TypeScript, Tailwind CSS
+* **Backend/Database:** Prisma, Supabase/Neon
+* **Payments:** Chapa Payment Gateway integration
+* **Languages:** Multi-language support (Amharic, English, Oromic)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 📦 Getting Started
 
-## Deploy on Vercel
+1.  **Clone the repository:**
+    ```bash
+    git clone [https://github.com/your-username/multiverse-africa.git](https://github.com/your-username/multiverse-africa.git)
+    ```
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
+3.  **Set up Environment Variables:**
+    Create a `.env` file and add your database and Chapa API keys:
+    ```env
+    DATABASE_URL="your_database_url"
+    CHAPA_SECRET_KEY="your_chapa_key"
+    ```
+4.  **Run the development server:**
+    ```bash
+    npm run dev
+    ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🌍 Global Vision
+Our mission is to build a better future through:
+* **Excellence & Quality:** Adhering to global standards.
+* **Sustainability:** Spearheading Ethiopia’s first large-scale EV charging network.
+* **Transparency:** Building partnerships on honesty and mutual trust.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## 📞 Contact Us
+* **Location:** Addis Ababa, Ethiopia
+* **Phone:** +251 911 22 15 67
+* **Website:** [multiverseafrica.com](https://www.multiverseafrica.com)
+* **Email:** contact@multiverseafrica.com
+
+© 2026 Multiverse Africa. All Rights Reserved.
