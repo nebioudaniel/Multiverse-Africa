@@ -3,7 +3,7 @@
 import { NextResponse } from 'next/server';
 import * as z from 'zod';
 import prisma from '@/lib/prisma'; // Use your shared Prisma client
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library'; // FIX 1: Import specific Prisma error
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library'; // Import specific Prisma error
 
 // Helper function to safely extract an error message
 const getErrorMessage = (err: unknown): string => {
@@ -13,7 +13,7 @@ const getErrorMessage = (err: unknown): string => {
     return "An unknown error occurred.";
 };
 
-// create helper function for retries
+// Retry helper for Neon transient errors
 async function createUserWithRetry(data: any) {
   for (let i = 0; i < 3; i++) {
     try {
@@ -45,7 +45,7 @@ const apiSchema = z.object({
   region: z.string().min(1, "Region is required."),
   city: z.string().min(2, "City/Sub-City is required."),
   woredaKebele: z.string().min(2, "Woreda / Kebele is required."),
-  primaryPhoneNumber: z.string().regex(/^\+?([0-9]{9,15})$/, "Invalid phone number format. E.g., +251912345678 or 0912345678").min(1, "Primary Phone Number is required."),
+  primaryPhoneNumber: z.string().regex(/^\+?([0-9]{9,15})$/, "Invalid phone number format.").min(1, "Primary Phone Number is required."),
   alternativePhoneNumber: z.string().regex(/^\+?([0-9]{9,15})$/, "Invalid phone number format.").nullable().optional(),
   emailAddress: z.string().email("Invalid email address.").nullable().optional(),
 
@@ -84,7 +84,7 @@ export async function POST(req: Request) {
 
     const validatedData = apiSchema.parse(body);
 
-    // Use retry helper here
+    // Create user with retry helper
     const newUser = await createUserWithRetry({
       fullName: validatedData.fullName,
       fatherName: validatedData.fatherName,
@@ -124,19 +124,21 @@ export async function POST(req: Request) {
     console.log("API: Data successfully validated and SAVED to DB:", newUser);
 
     // --- ACTIVITY LOG ---
-    try {
-      const logDescription = `New ${newUser.isBusiness ? 'business' : 'individual'} applicant registered: ${newUser.fullName} (ID: ${newUser.id}).`;
-      await prisma.activityLog.create({
-        data: {
-          action: "NEW_USER_REGISTRATION",
-          description: logDescription,
-          entityId: newUser.id,
-          entityType: "User",
-        }
-      });
-      console.log("ActivityLog entry created for new user registration.");
-    } catch (logError) {
-      console.error("Failed to create ActivityLog for new user:", logError);
+    if (newUser) {
+      try {
+        const logDescription = `New ${newUser.isBusiness ? 'business' : 'individual'} applicant registered: ${newUser.fullName} (ID: ${newUser.id}).`;
+        await prisma.activityLog.create({
+          data: {
+            action: "NEW_USER_REGISTRATION",
+            description: logDescription,
+            entityId: newUser.id,
+            entityType: "User",
+          }
+        });
+        console.log("ActivityLog entry created for new user registration.");
+      } catch (logError) {
+        console.error("Failed to create ActivityLog for new user:", logError);
+      }
     }
 
     return NextResponse.json({ message: "Registration successful!", user: newUser }, { status: 200 });
