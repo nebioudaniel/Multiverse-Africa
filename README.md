@@ -28,26 +28,6 @@ If you are developing the digital platform for Multiverse Africa, this repositor
 * **Payments:** Chapa Payment Gateway integration
 * **Languages:** Multi-language support (Amharic, English, Oromic)
 
-## 📦 Getting Started
-
-1.  **Clone the repository:**
-    ```bash
-    git clone [https://github.com/your-username/multiverse-africa.git](https://github.com/your-username/multiverse-africa.git)
-    ```
-2.  **Install dependencies:**
-    ```bash
-    npm install
-    ```
-3.  **Set up Environment Variables:**
-    Create a `.env` file and add your database and Chapa API keys:
-    ```env
-   
-    ```
-4.  **Run the development server:**
-    ```bash
-    npm run dev
-    ```
-
 ## 🌍 Global Vision
 Our mission is to build a better future through:
 * **Excellence & Quality:** Adhering to global standards.
@@ -62,4 +42,4 @@ Our mission is to build a better future through:
 * **Website:** [multiverseafrica.com](https://www.multiverseafrica.com)
 * **Email:** contact@multiverseafrica.com
 
-© 2026 Multiverse Africa. All Rights Reserved.
+© 2026/2027 Multiverse Africa. All Rights Reserved.
