@@ -1,5 +1,5 @@
 # Multiverse Africa - Trade Without Borders
-.
+
 **Multiverse Africa** is a diversified Ethiopian enterprise group established in 2000. We are dedicated to shaping the nation's economic transformation by integrating local strength with international reach across industry, real estate, trade finance, and electronics.
 
 ---
