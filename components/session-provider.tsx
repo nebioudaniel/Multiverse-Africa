@@ -8,7 +8,10 @@ import { EdgeStoreProvider } from '@/lib/edgestore-client';
 
 interface Props {
   children: ReactNode;
-  session: any; // ✅ intentionally untyped (required)
+  // Optional: when omitted/undefined the SessionProvider auto-fetches the
+  // session via the /api/auth session endpoint (client-side). Used by the now
+  // static root layout; admin pages keep working unchanged via client fetch.
+  session?: any;
 }
 
 export function SessionProvider({ children, session }: Props) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams, useParams } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -199,6 +199,23 @@ function DataRow({ icon: Icon, label, value }: DataRowProps) {
 
 
 export default function ThankYouPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center p-4">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900 mx-auto mb-4"></div>
+            <p className="text-lg text-gray-700 dark:text-zinc-300">Loading…</p>
+          </div>
+        </div>
+      }
+    >
+      <ThankYouPageContent />
+    </Suspense>
+  );
+}
+
+function ThankYouPageContent() {
   const searchParams = useSearchParams();
   const params = useParams();
   const locale = params?.locale as string;
